@@ -239,6 +239,9 @@
   .fr{display:flex; gap:12px}
   .fr>*{flex:1; min-width:0}
   .acts{display:flex; gap:8px; justify-content:flex-end; margin-top:18px}
+  .convNote{display:none; margin:-4px 0 13px; padding:8px 11px; border-radius:var(--r); font-size:13px; line-height:1.6;
+            background:var(--char-bg); border:1px solid #EBC98E; color:#6B4300}
+  .convNote.on{display:block}
   .sep{border:0; border-top:1px solid var(--rule); margin:18px 0}
   .note{color:var(--ink3); font-size:13px; margin:0 0 10px}
   .cm{display:flex; align-items:center; gap:6px; padding:5px 4px 5px 10px; border-radius:7px; font-size:14px}
@@ -444,6 +447,7 @@
       <option value="char">キャラ（外見＋服装）</option></select></div>
     <div class="f"><label>カテゴリ</label><input class="fld" id="eCat" list="catList" placeholder="オリジナルキャラ"><datalist id="catList"></datalist></div>
   </div>
+  <p class="convNote" id="eConv"></p>
   <div class="f"><label>表示名</label><input class="fld" id="eName" placeholder="一覧に表示される名前"></div>
   <div id="gText">
     <div class="f"><label>プロンプト</label><textarea class="fld" id="eText" placeholder="silver hair, red eyes"></textarea></div>
@@ -1791,9 +1795,7 @@ function openEdit(p){
   S.editing=p||null;
   var k=p?p.kind:(S.f.kind!=="all"?S.f.kind:"pos");
   $("#eKind").value=k;
-  $("#eKind").disabled=!!p&&(p.kind==="sit"||p.kind==="char"); // 作成後の種別変更はポジ⇔ネガのみ
-  if(p&&(p.kind==="pos"||p.kind==="neg"))Array.prototype.forEach.call($("#eKind").options,function(o){o.disabled=o.value==="sit"||o.value==="char"});
-  else Array.prototype.forEach.call($("#eKind").options,function(o){o.disabled=false});
+  S.editKind=k;
   $("#eCat").value=p?p.cat:(S.f.cats.length===1?S.f.cats[0]:"");
   $("#eName").value=p?p.name:"";
   $("#eText").value=p&&p.text&&!(p.kind==="sit"||p.kind==="char")?p.text:"";
@@ -1807,10 +1809,72 @@ function openEdit(p){
   $("#eTags").value=p?p.tags.join(", "):"";
   $("#eNote").value=p?p.note:"";
   showKindFields(k);
+  $("#eConv").classList.remove("on");
   $("#mEdit").classList.add("on");
   setTimeout(function(){$("#eName").focus()},30);
 }
-$("#eKind").addEventListener("change",function(){showKindFields(this.value)});
+/* 種別の変換：編集中の項目の種別を変えたら、元の内容を新しい種別の欄に移しておく */
+var KNAME={pos:"ポジティブ",neg:"ネガティブ",sit:"シチュエーション",char:"キャラ"};
+var KDEFCAT={pos:OTHER,neg:OTHER,sit:CAT_SIT,char:CAT_CHAR};
+function isBig(k){return k==="sit"||k==="char"}
+function convFill(p,k){
+  // 元の内容をテキストにする
+  var t=function(a){return chipsToText(a||[])};
+  var from=p.kind,src;
+  if(from==="sit")src={main:t(p.base),neg:t(p.neg)};
+  else if(from==="char")src={main:t((p.look||[]).concat(p.outfit||[])),look:t(p.look),outfit:t(p.outfit)};
+  else src={main:p.text};
+  if(k==="pos"||k==="neg"){
+    $("#eText").value=from==="sit"?(k==="neg"?src.neg:src.main):src.main;
+    $("#eNl").checked=from==="pos"||from==="neg"?!!p.nl:false;
+  }else if(k==="sit"){
+    $("#eBase").value=from==="neg"?"":(from==="sit"?src.main:src.main);
+    $("#eNeg").value=from==="neg"?src.main:(from==="sit"?src.neg:"");
+    $("#eNoOutfit").checked=from==="sit"?!!p.noOutfit:false;
+  }else if(k==="char"){
+    $("#eLook").value=from==="char"?src.look:src.main;
+    $("#eOutfit").value=from==="char"?src.outfit:"";
+    $("#eSex").value=from==="char"?p.sex:"girl";
+  }
+  var cat=$("#eCat").value.trim();
+  if(!cat||cat===KDEFCAT[from]||cat===KDEFCAT[S.editKind])$("#eCat").value=KDEFCAT[k];
+}
+// 変換で失われる内容・切れるつながりを数える
+function convLoss(p,k){
+  var lost=[],n=0;
+  if(p.kind==="sit"){
+    if(k==="pos"&&p.neg.length)lost.push("ネガティブ");
+    if(k==="neg"&&p.base.length)lost.push("ベース");
+    if(k==="char"&&p.neg.length)lost.push("ネガティブ");
+    if(normSlots(p.slots).length)lost.push("キャラ枠ごとの追加");
+    if(p.noOutfit)lost.push("「服装を使わない」の設定");
+  }
+  if(p.kind==="char"&&k!=="char"){
+    if(k!=="sit"&&p.outfit.length)lost.push("外見と服装の区別（1つにまとめます）");
+    if(k==="sit"&&p.outfit.length)lost.push("外見と服装の区別（ベースにまとめます）");
+    lost.push("性別");
+  }
+  if((p.kind==="pos"||p.kind==="neg")&&isBig(k))eachChip(function(c){if(c.pid===p.id)n++});
+  return {lost:lost,links:n};
+}
+function convMsg(p,k){
+  var L=convLoss(p,k),m="種別を「"+KNAME[p.kind]+"」から「"+KNAME[k]+"」に変えます。内容は新しい欄に移しました。";
+  if(L.lost.length)m+="\n保存すると、次の内容は引き継がれません："+L.lost.join("、")+"。";
+  if(L.links)m+="\nこの項目を使っているチップ "+L.links+" 個とのつながりが切れます（チップの内容はそのまま残ります）。";
+  return m;
+}
+$("#eKind").addEventListener("change",function(){
+  var k=this.value,p=S.editing;
+  if(p&&k!==S.editKind){
+    if(k===p.kind)openEdit(p); // 元の種別に戻したら元の内容に戻す
+    else{convFill(p,k);S.editKind=k}
+  }
+  if(!p)S.editKind=k;
+  showKindFields(this.value);
+  var conv=p&&k!==p.kind&&(isBig(k)||isBig(p.kind));
+  $("#eConv").classList.toggle("on",!!conv);
+  if(conv)$("#eConv").textContent=convMsg(p,k);
+});
 $("#bNew").addEventListener("click",function(){openEdit(null)});
 $("#eSave").addEventListener("click",function(){
   var k=$("#eKind").value,ed=S.editing,o,i;
@@ -1837,10 +1901,28 @@ $("#eSave").addEventListener("click",function(){
     if(dupe&&!confirm("同じプロンプトがすでに登録されています（「"+dupe.name+"」／"+dupe.cat+"）。\nそれでも保存しますか？"))return;
   }
   for(var c in common)o[c]=common[c];
+  var converted=ed&&ed.kind!==k&&(isBig(k)||isBig(ed.kind));
+  if(converted){
+    var L=convLoss(ed,k);
+    if((L.lost.length||L.links)&&!confirm(convMsg(ed,k).replace("内容は新しい欄に移しました。","")+"\nよろしいですか？"))return;
+  }
+  if(ed&&ed.kind!==k){
+    var before=JSON.parse(JSON.stringify(ed));
+    if(converted){
+      // 元の種別のチップとのつながりを外す（チップの内容は残る）
+      var unlinked=[],eid=ed.id;
+      if(!isBig(ed.kind))eachChip(function(ch){if(ch.pid===eid){ch.pid=null;unlinked.push(ch)}});
+      setUndo("種別の変換を取り消しました",function(){
+        for(var x in ed)delete ed[x];for(var y in before)ed[y]=before[y];
+        unlinked.forEach(function(ch){ch.pid=eid});
+      });
+    }
+    ["text","nl","base","neg","slots","noOutfit","sex","look","outfit"].forEach(function(f){delete ed[f]});
+  }
   if(ed){
     // 組み立てに読み込み中で、変更していない場合は登録内容に合わせて読み直す
-    var wClean=ed.kind==="sit"&&W().from===ed.id&&!workDirty();
-    var cClean=[];S.comp.chars.forEach(function(ch,j){if(ch&&ch.from===ed.id&&!charDirty(ch))cClean.push(j)});
+    var wClean=k==="sit"&&W().from===ed.id&&!workDirty();
+    var cClean=[];if(k==="char")S.comp.chars.forEach(function(ch,j){if(ch&&ch.from===ed.id&&!charDirty(ch))cClean.push(j)});
     for(var key in o)ed[key]=o[key];
     if(ed.kind==="sit"||ed.kind==="char")ed.text=summary(ed);
     else eachChip(function(ch){if(ch.pid===ed.id){ch.name=ed.name;ch.text=ed.text;ch.nl=ed.nl}});
@@ -1854,7 +1936,8 @@ $("#eSave").addEventListener("click",function(){
   }
   if(S.cats.indexOf(o.cat)<0)S.cats.push(o.cat);
   S.editing=null;$("#mEdit").classList.remove("on");render();save();
-  toast(ed?"保存しました":(k==="sit"?"シチュエーションを登録しました（一覧でクリックすると組み立てに読み込みます）":
+  if(converted)toast("「"+KNAME[k]+"」に変換しました","元に戻す");
+  else toast(ed?"保存しました":(k==="sit"?"シチュエーションを登録しました（一覧でクリックすると組み立てに読み込みます）":
     k==="char"?"キャラを登録しました（一覧でクリックするとキャラ枠に入ります）":"保存しました"));
 });
 document.querySelectorAll("[data-close]").forEach(function(b){
