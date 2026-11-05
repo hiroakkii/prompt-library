@@ -111,6 +111,13 @@
   .row:hover{border-color:var(--line2); background:var(--raise)}
   .row.neg{border-left:3px solid var(--neg)}
   .row.pos{border-left:3px solid var(--pos)}
+  .row.sit{border-left:3px solid var(--ok)}
+  .row.char{border-left:3px solid var(--fav)}
+  .kb{font-size:10.5px; padding:0 6px; border-radius:6px; line-height:16px; flex:none; color:#12141c}
+  .kb.sit{background:var(--ok)} .kb.char{background:var(--fav)}
+  .wname{font-size:13px; color:var(--tx); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .wname.none{color:var(--tx3)}
+  .dirty{font-size:10.5px; padding:1px 7px; border-radius:9px; border:1px solid var(--fav); color:var(--fav); white-space:nowrap}
   .rmain{min-width:0; flex:1}
   .rname{font-size:13.5px; margin-bottom:2px; display:flex; align-items:center; gap:6px}
   .rtext{font-family:var(--mono); font-size:12px; color:var(--tx2); overflow:hidden;
@@ -269,9 +276,11 @@
     <div class="pane">
       <div class="sect">種別</div>
       <div style="display:flex;gap:6px">
-        <button class="btn kind on" data-kind="all" style="flex:1;padding:10px">両方</button>
-        <button class="btn kind" data-kind="pos" style="flex:1;padding:10px">ポジ</button>
-        <button class="btn kind" data-kind="neg" style="flex:1;padding:10px">ネガ</button>
+        <button class="btn kind on" data-kind="all" style="flex:1;padding:10px 4px">すべて</button>
+        <button class="btn kind" data-kind="pos" style="flex:1;padding:10px 4px">ポジ</button>
+        <button class="btn kind" data-kind="neg" style="flex:1;padding:10px 4px">ネガ</button>
+        <button class="btn kind" data-kind="sit" style="flex:1;padding:10px 4px">シチュ</button>
+        <button class="btn kind" data-kind="char" style="flex:1;padding:10px 4px">キャラ</button>
       </div>
       <div class="sect sp">カテゴリ<span class="hint">（複数選択可・いずれかに一致）</span></div>
       <div id="cats"></div>
@@ -304,11 +313,16 @@
     <div class="blk">
       <div class="bhead">
         <span class="btitle">シチュエーション</span>
-        <select class="fld" id="sitSel"></select>
-        <button class="ico" id="sitNew" title="新しいシチュエーション">＋</button>
-        <button class="ico" id="sitRen" title="名前を変更">✎</button>
-        <button class="ico" id="sitDup" title="複製">⧉</button>
-        <button class="ico" id="sitDel" title="削除">×</button>
+        <span class="wname" id="wName"></span>
+        <span class="dirty" id="wDirty">未保存の変更</span>
+        <span class="grow"></span>
+        <button class="btn mini" id="wPick">一覧から選ぶ</button>
+      </div>
+      <div class="bhead" style="margin-top:-4px">
+        <button class="btn mini" id="wSave">上書き保存</button>
+        <button class="btn mini" id="wSaveAs">別件として保存</button>
+        <button class="btn mini" id="wRevert">元に戻す</button>
+        <button class="btn mini danger" id="wClear">空にする</button>
       </div>
       <div id="sitZones"></div>
       <div style="margin:-2px 0 8px">
@@ -321,22 +335,25 @@
       <div class="bhead">
         <span class="btitle">キャラ</span><span class="hint" id="charCnt"></span>
         <span class="grow"></span>
+        <button class="btn mini" id="cPick">一覧から選ぶ</button>
         <button class="btn mini" id="bAddSlot">＋キャラ枠</button>
       </div>
       <div id="slots"></div>
       <div class="cedit" id="cedit">
         <div class="bhead">
           <span class="btitle" id="cName"></span>
+          <span class="dirty" id="cDirty">未保存の変更</span>
+          <span class="grow"></span>
           <select class="fld" id="cSex" style="flex:none;width:auto;min-width:0">
             <option value="girl">女性（girl）</option>
             <option value="boy">男性（boy）</option>
             <option value="other">その他</option>
           </select>
-          <span class="grow"></span>
-          <button class="ico" id="cNew" title="新しいキャラを作ってこの枠に入れる">＋</button>
-          <button class="ico" id="cRen" title="名前を変更">✎</button>
-          <button class="ico" id="cDup" title="複製してこの枠に入れる">⧉</button>
-          <button class="ico" id="cDel" title="このキャラを削除">×</button>
+        </div>
+        <div class="bhead" id="cActs" style="margin-top:-4px">
+          <button class="btn mini" id="cSave">上書き保存</button>
+          <button class="btn mini" id="cSaveAs">別件として保存</button>
+          <button class="btn mini" id="cRevert">元に戻す</button>
         </div>
         <div id="charZones"></div>
       </div>
@@ -357,15 +374,38 @@
 <div class="modal" id="mEdit"><div class="card">
   <h3 id="edTitle">プロンプトを追加</h3>
   <div class="fr">
+    <div class="f"><label>種別</label><select class="fld" id="eKind">
+      <option value="pos">ポジティブ</option>
+      <option value="neg">ネガティブ</option>
+      <option value="sit">シチュエーション（ベース＋ネガ）</option>
+      <option value="char">キャラ（外見＋服装）</option></select></div>
     <div class="f"><label>カテゴリ</label><input class="fld" id="eCat" list="catList" placeholder="オリジナルキャラ"><datalist id="catList"></datalist></div>
-    <div class="f"><label>種別</label><select class="fld" id="eKind"><option value="pos">ポジティブ</option><option value="neg">ネガティブ</option></select></div>
   </div>
   <div class="f"><label>表示名</label><input class="fld" id="eName" placeholder="一覧に表示される名前"></div>
-  <div class="f"><label>プロンプト</label><textarea class="fld" id="eText" placeholder="silver hair, red eyes"></textarea></div>
+  <div id="gText">
+    <div class="f"><label>プロンプト</label><textarea class="fld" id="eText" placeholder="silver hair, red eyes"></textarea></div>
+    <div class="f"><label><input type="checkbox" id="eNl"> 文章（自然言語）として扱う</label>
+      <div class="hint">オンにすると、カンマで分割せず1つのまとまりとして出力します（重複除去・括弧のエスケープ・人数タグの置き換えの対象外）。</div></div>
+  </div>
+  <div id="gSit" style="display:none">
+    <div class="f"><label>ベース（ポジティブ）</label><textarea class="fld" id="eBase" placeholder="masterpiece, beach, sunset&#10;A quiet beach at sunset, warm rim light."></textarea></div>
+    <div class="f"><label style="color:var(--neg)">ネガティブ</label><textarea class="fld" id="eNeg" placeholder="lowres, bad anatomy"></textarea></div>
+    <div class="f"><label><input type="checkbox" id="eNoOutfit"> このシチュエーションではキャラの「服装」を使わない</label></div>
+  </div>
+  <div id="gChar" style="display:none">
+    <div class="f"><label>性別</label><select class="fld" id="eSex" style="width:auto">
+      <option value="girl">女性（girl）</option><option value="boy">男性（boy）</option><option value="other">その他</option></select></div>
+    <div class="f"><label>外見</label><textarea class="fld" id="eLook" placeholder="silver hair, red eyes, long hair"></textarea></div>
+    <div class="f"><label>服装</label><textarea class="fld" id="eOutfit" placeholder="school uniform"></textarea></div>
+  </div>
+  <p class="hint" id="gHint" style="display:none;margin:-4px 0 11px">1行ごとに、カンマ区切りのタグか文章を書きます。文章は文末を「.」で終えてください。重みは <code>(tag:1.2)</code> で書けます。キャラ枠ごとの追加（動作タグなど）は組み立てタブで編集して上書き保存します。</p>
   <div class="f"><label>タグ（, 区切り・任意）</label><input class="fld" id="eTags" placeholder="自作, 女性"></div>
   <div class="f"><label>メモ（任意）</label><input class="fld" id="eNote"></div>
-  <div class="f"><label><input type="checkbox" id="eNl"> 文章（自然言語）として扱う</label>
-    <div class="hint">オンにすると、カンマで分割せず1つのまとまりとして出力します（重複除去・括弧のエスケープ・人数タグの置き換えの対象外）。</div></div>
+  <div class="acts">
+    <button class="btn" data-close>キャンセル</button>
+    <button class="btn go" id="eSave">保存</button>
+  </div>
+</div></div>
   <div class="acts">
     <button class="btn" data-close>キャンセル</button>
     <button class="btn go" id="eSave">保存</button>
@@ -375,7 +415,7 @@
 <div class="modal" id="mImp"><div class="card">
   <h3>取り込み方法</h3>
   <p style="color:var(--tx2);font-size:13px;margin:0 0 6px" id="impInfo"></p>
-  <p class="note" style="margin:0 0 4px">「追加」では、プロンプト本文が既存と同じ行は飛ばします。「全置換」は直後なら元に戻せます（設定画面からも復元できます）。</p>
+  <p class="note" style="margin:0 0 4px">「追加」では、既存と同じ内容の行（ポジ・ネガは本文、シチュエーション・キャラは名前と内容が同じもの）は飛ばします。「全置換」は直後なら元に戻せます（設定画面からも復元できます）。</p>
   <div class="acts">
     <button class="btn" data-close>キャンセル</button>
     <button class="btn danger" id="impRep">全置換</button>
@@ -416,6 +456,10 @@
   <h4>データ</h4>
   <p class="note" id="storeInfo"></p>
   <p class="note">データはこのアプリ内に自動保存されます。念のため、ときどきJSONで書き出して手元に残してください。</p>
+  <div id="migBox" style="display:none;margin-bottom:10px">
+    <p class="note" id="migInfo" style="margin-bottom:6px"></p>
+    <button class="btn mini" id="migSave">移行前のデータをJSONで保存</button>
+  </div>
   <div id="bakBox" style="display:none;margin-bottom:10px">
     <p class="note" id="bakInfo" style="margin-bottom:6px"></p>
     <button class="btn mini" id="bakRestore">全置換する前の状態に戻す</button>
@@ -441,12 +485,13 @@
 "use strict";
 var $=function(s){return document.querySelector(s)};
 var K_LIB="plib.library.v1", K_MEM="plib.memos.v1", K_CFG="plib.config.v1", K_BAK="plib.prereplace.v1",
-    K_CMP="plib.compose.v2";
+    K_CMP2="plib.compose.v2", K_CMP="plib.compose.v3", K_MIG="plib.premigrate.v3";
 var DEFCATS=["オリジナルキャラ","体位","行為","その他"];
-var OTHER="その他";
+var OTHER="その他", CAT_SIT="シチュエーション", CAT_CHAR="キャラ";
+var KINDS=["pos","neg","sit","char"];
+var KLAB={pos:"ポジ",neg:"ネガ",sit:"シチュ",char:"キャラ"};
 // キャラ数の上限：NovelAI V5 は最大22人（公式）。PixAI は1本のプロンプトにまとまるため6人まで出力
 var MAXCH=22, PIXAI_MAX=6;
-function maxCh(){return S.comp.svc==="pixai"?PIXAI_MAX:MAXCH}
 
 /* ---------- 外部ライブラリ（SheetJS）: 必要になった時に読み込む ---------- */
 // 1. 公式CDNの最新版（既知の脆弱性を修正済み）
@@ -521,20 +566,23 @@ var store={
 
 /*
   データ構造
-  prompts : ライブラリ（素材）。kind は pos / neg
-  sits    : シチュエーション {id,name,base[],neg[],free,slots[[],...],noOutfit}
-            slots[i] は「このシチュエーションでキャラ i+1 に足すタグ」（動作タグなど）
-  chars   : キャラ {id,name,sex:girl|boy|other,look[],outfit[]}
-  comp    : 組み立て中の状態 {sit, chars:[キャラid...], svc:nai|pixai, slot, tgt}
-  チップ  : {cid,pid,name,text,w}
+  prompts（一覧の項目）
+    kind=pos/neg : {text, nl}                        … 素材。クリックで「追加先」に入る
+    kind=sit     : {base[], neg[], slots[[]...], noOutfit} … シチュエーション。クリックで組み立てに読み込む
+    kind=char    : {sex, look[], outfit[]}           … キャラ。クリックで選択中のキャラ枠に入る
+    共通         : {id, kind, cat, name, text(一覧表示・検索用の要約), tags, note, fav, uses, created}
+  comp（組み立てタブ。読み込んだ項目の作業用コピー。保存するまで一覧の登録内容は変わらない）
+    work  : {from, name, base[], neg[], free, slots[[]...], noOutfit}
+    chars : [ null（空の枠） | {from, name, sex, look[], outfit[]} ]
+    svc, slot, tgt
+  チップ : {cid, pid, name, text, w, nl}
 */
 var S={
   prompts:[], cats:DEFCATS.slice(),
-  sits:[], chars:[],
-  comp:{sit:"",chars:[],svc:"nai",slot:0,tgt:"base"},
+  comp:null,
   cfg:{dup:false,step:0.05,naiFmt:"nai4",sep:", ",dedup:true,escp:true,auto:true,pxJoin:"comma"},
   f:{kind:"all",cats:[],tags:[],tagMode:"and",q:""},
-  sort:"new", editing:null, pending:null, sel:{}, undo:null, bak:null, out:null
+  sort:"new", editing:null, pending:null, sel:{}, undo:null, bak:null, mig:null, out:null
 };
 var uid=function(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)};
 var esc=function(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){
@@ -553,7 +601,7 @@ function toast(m,undoLabel){
     t.appendChild(b);
   }
   t.classList.add("on");
-  clearTimeout(tq);tq=setTimeout(function(){t.classList.remove("on")},undoLabel?9000:(m.length>40?4000:1700));
+  clearTimeout(tq);tq=setTimeout(function(){t.classList.remove("on")},undoLabel?9000:(m.length>40?4000:1900));
 }
 function hideToast(){clearTimeout(tq);$("#toast").classList.remove("on")}
 
@@ -561,13 +609,65 @@ var sq=null,dirty=false;
 function doSave(){
   dirty=false;
   store.set(K_LIB,{prompts:S.prompts,cats:S.cats});
-  store.set(K_CMP,{sits:S.sits,chars:S.chars,comp:S.comp});
+  store.set(K_CMP,{comp:S.comp});
   store.set(K_CFG,S.cfg);
 }
 function save(){dirty=true;clearTimeout(sq);sq=setTimeout(doSave,350)}
 function flush(){if(dirty){clearTimeout(sq);doSave()}}
 window.addEventListener("pagehide",flush);
 document.addEventListener("visibilitychange",function(){if(document.visibilityState==="hidden")flush()});
+
+/* ---------- チップ ⇔ テキスト ---------- */
+// カンマ・改行で区切る（括弧の中のカンマとエスケープ済み文字は区切らない）
+function splitTop(s){
+  var out=[],buf="",d=0,i,ch;
+  for(i=0;i<s.length;i++){
+    ch=s[i];
+    if(ch==="\\"&&i+1<s.length){buf+=ch+s[i+1];i++;continue}
+    if(ch==="("||ch==="["||ch==="{")d++;
+    else if((ch===")"||ch==="]"||ch==="}")&&d>0)d--;
+    if(d===0&&(ch===","||ch==="\n")){out.push(buf);buf=""}else buf+=ch;
+  }
+  out.push(buf);
+  return out.map(function(t){return t.trim()}).filter(Boolean);
+}
+function isProse(line){
+  if(/[.!?。！？]$/.test(line))return true;
+  return splitTop(line).length===1&&line.split(/\s+/).length>=5;
+}
+function clampW(w){w=Number(w);if(!isFinite(w))w=1;return Math.round(Math.min(2,Math.max(0.1,w))*100)/100}
+// 編集画面のテキスト → チップ（1行ごとに、タグのカンマ区切りか文章）。old のチップと本文が同じなら表示名などを引き継ぐ
+function textToChips(text,old){
+  var keep={},out=[];
+  (old||[]).forEach(function(c){keep[c.text+"\u0000"+(c.nl?1:0)]=c});
+  str(text).split(/\n/).forEach(function(line){
+    line=line.trim();if(!line)return;
+    var toks=isProse(line)?[{t:line,nl:true}]:splitTop(line).map(function(t){return {t:t,nl:false}});
+    toks.forEach(function(o){
+      var t=o.t,w=1,m=!o.nl&&/^\(([\s\S]+):\s*(\d+(?:\.\d+)?)\)$/.exec(t);
+      if(m){t=m[1].trim();w=clampW(m[2])}
+      var k=keep[t+"\u0000"+(o.nl?1:0)];
+      out.push({cid:uid(),pid:k?k.pid:null,name:k?k.name:"",text:t,w:w,nl:o.nl});
+    });
+  });
+  return out;
+}
+function chipsToText(arr){
+  var lines=[],cur=[];
+  arr.forEach(function(c){
+    if(c.nl){if(cur.length){lines.push(cur.join(", "));cur=[]}lines.push(c.text);return}
+    cur.push(c.w!==1?"("+c.text+":"+c.w.toFixed(2)+")":c.text);
+  });
+  if(cur.length)lines.push(cur.join(", "));
+  return lines.join("\n");
+}
+function oneLine(arr){return chipsToText(arr).replace(/\n/g," / ")}
+function cloneChips(a){return (a||[]).map(function(c){return {cid:uid(),pid:c.pid,name:c.name,text:c.text,w:c.w,nl:!!c.nl}})}
+function summary(p){
+  if(p.kind==="sit")return oneLine(p.base)+(p.neg.length?"  ／ ネガ: "+oneLine(p.neg):"");
+  if(p.kind==="char")return oneLine(p.look)+(p.outfit.length?"  ／ 服装: "+oneLine(p.outfit):"");
+  return p.text;
+}
 
 /* ---------- データの検証・正規化 ---------- */
 function validId(v){return typeof v==="string"&&/^[A-Za-z0-9_-]{1,64}$/.test(v)}
@@ -577,71 +677,46 @@ function splitTags(v){
   a.forEach(function(s){s=str(s).trim();if(s&&!seen[s]){seen[s]=1;out.push(s)}});
   return out;
 }
+function normChip(c){
+  if(!c||typeof c!=="object")return null;
+  var text=str(c.text).trim();if(!text)return null;
+  return {cid:validId(c.cid)?c.cid:uid(),pid:validId(c.pid)?c.pid:null,name:str(c.name),text:text,w:clampW(c.w==null?1:c.w),nl:!!c.nl};
+}
+function chips(a){return Array.isArray(a)?a.map(normChip).filter(Boolean):[]}
+function normSlots(a){
+  var s=Array.isArray(a)?a.slice(0,MAXCH).map(chips):[];
+  while(s.length&&!s[s.length-1].length)s.pop();
+  return s;
+}
+function sexOf(v){return ["girl","boy","other"].indexOf(v)>=0?v:"girl"}
 function normPrompt(p,i,seen){
   if(!p||typeof p!=="object")return null;
-  var text=str(p.text).trim();if(!text)return null;
-  var id=validId(p.id)&&!seen[p.id]?p.id:uid();seen[id]=1;
+  var kind=KINDS.indexOf(p.kind)>=0?p.kind:"pos";
+  var id=validId(p.id)&&!seen[p.id]?p.id:uid();
   var cr=Number(p.created);
-  return {id:id,cat:str(p.cat).trim()||OTHER,name:str(p.name).trim()||text.slice(0,28),text:text,
-    tags:splitTags(p.tags),note:str(p.note).trim(),kind:p.kind==="neg"?"neg":"pos",nl:!!p.nl,
+  var o={id:id,kind:kind,cat:str(p.cat).trim(),name:str(p.name).trim(),tags:splitTags(p.tags),note:str(p.note).trim(),
     fav:!!p.fav,uses:Math.max(0,parseInt(p.uses,10)||0),created:isFinite(cr)&&p.created!=null?cr:(i||0)};
+  if(kind==="sit"){
+    o.base=chips(p.base);o.neg=chips(p.neg);o.slots=normSlots(p.slots);o.noOutfit=!!p.noOutfit;
+    if(!o.base.length&&!o.neg.length&&!o.name)return null;
+    o.cat=o.cat||CAT_SIT;o.name=o.name||"シチュエーション";
+  }else if(kind==="char"){
+    o.sex=sexOf(p.sex);o.look=chips(p.look);o.outfit=chips(p.outfit);
+    if(!o.look.length&&!o.outfit.length&&!o.name)return null;
+    o.cat=o.cat||CAT_CHAR;o.name=o.name||"キャラ";
+  }else{
+    var text=str(p.text).trim();if(!text)return null;
+    o.text=text;o.nl=!!p.nl;o.cat=o.cat||OTHER;o.name=o.name||text.slice(0,28);
+  }
+  if(kind==="sit"||kind==="char")o.text=summary(o);
+  seen[id]=1;
+  return o;
 }
 function normPrompts(arr){
   var seen={},out=[];
   if(!Array.isArray(arr))return out;
   arr.forEach(function(p,i){var n=normPrompt(p,i,seen);if(n)out.push(n)});
   return out;
-}
-function normChip(c){
-  if(!c||typeof c!=="object")return null;
-  var text=str(c.text).trim();if(!text)return null;
-  var w=Number(c.w);if(!isFinite(w))w=1;
-  w=Math.round(Math.min(2,Math.max(0.1,w))*100)/100;
-  return {cid:validId(c.cid)?c.cid:uid(),pid:validId(c.pid)?c.pid:null,name:str(c.name),text:text,w:w,nl:!!c.nl};
-}
-function chips(a){return Array.isArray(a)?a.map(normChip).filter(Boolean):[]}
-function normList(arr,fn){
-  if(!Array.isArray(arr))return [];
-  var seen={},out=[];
-  arr.forEach(function(x,i){
-    if(!x||typeof x!=="object")return;
-    var id=validId(x.id)&&!seen[x.id]?x.id:uid();seen[id]=1;
-    out.push(fn(x,id,i));
-  });
-  return out;
-}
-function normSits(arr){
-  return normList(arr,function(s,id,i){
-    var slots=Array.isArray(s.slots)?s.slots.slice(0,MAXCH).map(chips):[];
-    return {id:id,name:str(s.name).trim()||"シチュエーション"+(i+1),base:chips(s.base),neg:chips(s.neg),
-      free:str(s.free),slots:slots,noOutfit:!!s.noOutfit};
-  });
-}
-function normChars(arr){
-  return normList(arr,function(c,id,i){
-    return {id:id,name:str(c.name).trim()||"キャラ"+(i+1),
-      sex:["girl","boy","other"].indexOf(c.sex)>=0?c.sex:"girl",look:chips(c.look),outfit:chips(c.outfit)};
-  });
-}
-// 旧形式（メモ欄のタブ：pos/neg/free）→ シチュエーション
-function tabsToSits(tabs){
-  if(!Array.isArray(tabs))return [];
-  return normSits(tabs.map(function(t){
-    return t&&typeof t==="object"?{id:t.id,name:t.name,base:t.pos,neg:t.neg,free:t.free}:null}));
-}
-function newSit(name){return {id:uid(),name:name,base:[],neg:[],free:"",slots:[],noOutfit:false}}
-function newChar(name){return {id:uid(),name:name,sex:"girl",look:[],outfit:[]}}
-function normComp(c){
-  c=c&&typeof c==="object"?c:{};
-  if(!S.sits.length)S.sits.push(newSit("シチュエーション1"));
-  var has=function(id){return S.chars.some(function(x){return x.id===id})};
-  var ch=(Array.isArray(c.chars)?c.chars:[]).filter(has).slice(0,MAXCH);
-  S.comp={
-    sit:S.sits.some(function(x){return x.id===c.sit})?c.sit:S.sits[0].id,
-    chars:ch, svc:c.svc==="pixai"?"pixai":"nai",
-    slot:Math.max(0,Math.min(ch.length-1,parseInt(c.slot,10)||0)),
-    tgt:["base","look","outfit","slot"].indexOf(c.tgt)>=0?c.tgt:"base"
-  };
 }
 function normCats(arr){
   var seen={},out=[];
@@ -657,60 +732,130 @@ function normCfg(c){
   if([", ",",",",\n"].indexOf(c.sep)>=0)d.sep=c.sep;
   if(c.pxJoin==="comma"||c.pxJoin==="para")d.pxJoin=c.pxJoin;
 }
-function allCats(){
-  var cats=S.cats.slice();
-  for(var i=0;i<S.prompts.length;i++)if(cats.indexOf(S.prompts[i].cat)<0)cats.push(S.prompts[i].cat);
-  return cats;
+function emptyWork(){return {from:null,name:"",base:[],neg:[],free:"",slots:[],noOutfit:false}}
+function normWork(w){
+  w=w&&typeof w==="object"?w:{};
+  return {from:validId(w.from)?w.from:null,name:str(w.name),base:chips(w.base),neg:chips(w.neg),free:str(w.free),
+    slots:normSlots(w.slots),noOutfit:!!w.noOutfit};
 }
-function syncCats(){S.cats=allCats()}
+function normCharW(c){
+  if(!c||typeof c!=="object")return null;
+  return {from:validId(c.from)?c.from:null,name:str(c.name)||"キャラ",sex:sexOf(c.sex),look:chips(c.look),outfit:chips(c.outfit)};
+}
+function normComp(c){
+  c=c&&typeof c==="object"?c:{};
+  var ch=(Array.isArray(c.chars)?c.chars:[]).slice(0,MAXCH).map(normCharW);
+  return {work:normWork(c.work),chars:ch,svc:c.svc==="pixai"?"pixai":"nai",
+    slot:Math.max(0,Math.min(ch.length-1,parseInt(c.slot,10)||0)),
+    tgt:["base","look","outfit","slot"].indexOf(c.tgt)>=0?c.tgt:"base"};
+}
 
-/* ---------- 組み立ての参照 ---------- */
-function sit(){for(var i=0;i<S.sits.length;i++)if(S.sits[i].id===S.comp.sit)return S.sits[i];return S.sits[0]}
-function charById(id){for(var i=0;i<S.chars.length;i++)if(S.chars[i].id===id)return S.chars[i];return null}
-function selChars(){return S.comp.chars.map(charById).filter(Boolean)}
+/* ---------- 旧形式からの変換 ---------- */
+// v1: メモ欄のタブ {pos,neg,free} / v2: sits・chars を別に保存 → v3: 一覧の項目（kind=sit/char）
+function v2Entries(sits,chars,now){
+  var out=[];now=now||Date.now();
+  (Array.isArray(sits)?sits:[]).forEach(function(s,i){
+    if(!s||typeof s!=="object")return;
+    var base=chips(s.base).concat(textToChips(s.free));
+    out.push({id:s.id,kind:"sit",cat:CAT_SIT,name:str(s.name).trim()||"シチュエーション"+(i+1),tags:[],note:"",
+      base:base,neg:chips(s.neg),slots:normSlots(s.slots),noOutfit:!!s.noOutfit,fav:false,uses:0,created:now-1000-i});
+  });
+  (Array.isArray(chars)?chars:[]).forEach(function(c,i){
+    if(!c||typeof c!=="object")return;
+    out.push({id:c.id,kind:"char",cat:CAT_CHAR,name:str(c.name).trim()||"キャラ"+(i+1),tags:[],note:"",
+      sex:c.sex,look:c.look,outfit:c.outfit,fav:false,uses:0,created:now-2000-i});
+  });
+  return out;
+}
+function tabsAsSits(tabs){
+  return (Array.isArray(tabs)?tabs:[]).filter(function(t){return t&&typeof t==="object"})
+    .map(function(t){return {id:t.id,name:t.name,base:t.pos,neg:t.neg,free:t.free}});
+}
+// どの形式のデータでも {prompts, cats, comp} にそろえる
+function upgrade(d){
+  d=d&&typeof d==="object"?d:{};
+  var raw=Array.isArray(d)?d:(Array.isArray(d.prompts)?d.prompts:[]);
+  var extra=[],comp=null,sitId=null,charIds=[];
+  if(!Array.isArray(d)){
+    if(Array.isArray(d.sits)||Array.isArray(d.chars)){
+      extra=v2Entries(d.sits,d.chars);
+      var c2=d.comp||{};sitId=c2.sit;charIds=Array.isArray(c2.chars)?c2.chars:[];
+      comp={svc:c2.svc,tgt:c2.tgt,slot:c2.slot};
+    }else if(Array.isArray(d.tabs)){
+      extra=v2Entries(tabsAsSits(d.tabs),[]);
+      sitId=d.active;comp={};
+    }else if(d.comp&&typeof d.comp==="object")comp=d.comp;
+  }
+  var prompts=normPrompts(raw.concat(extra));
+  if(comp&&!comp.work){ // v1/v2 の組み立て状態を作業用コピーに変換
+    var byId=function(id){for(var i=0;i<prompts.length;i++)if(prompts[i].id===id)return prompts[i];return null};
+    var s=byId(sitId);if(!s||s.kind!=="sit")s=prompts.filter(function(p){return p.kind==="sit"})[0];
+    comp.work=s?workFrom(s):emptyWork();
+    comp.chars=charIds.map(byId).filter(function(p){return p&&p.kind==="char"}).map(charFrom);
+  }
+  return {prompts:prompts,cats:Array.isArray(d)?[]:normCats(d.cats),comp:comp?normComp(comp):null,legacy:extra.length>0};
+}
+
+/* ---------- 参照 ---------- */
+function byId(id){if(!id)return null;for(var i=0;i<S.prompts.length;i++)if(S.prompts[i].id===id)return S.prompts[i];return null}
+function workFrom(p){return {from:p.id,name:p.name,base:cloneChips(p.base),neg:cloneChips(p.neg),free:"",
+  slots:(p.slots||[]).map(cloneChips),noOutfit:!!p.noOutfit}}
+function charFrom(p){return {from:p.id,name:p.name,sex:p.sex,look:cloneChips(p.look),outfit:cloneChips(p.outfit)}}
+function W(){return S.comp.work}
+function maxCh(){return S.comp.svc==="pixai"?PIXAI_MAX:MAXCH}
 function curChar(){
   var n=S.comp.chars.length;if(!n)return null;
   if(S.comp.slot>=n)S.comp.slot=n-1;
   if(S.comp.slot<0)S.comp.slot=0;
-  return charById(S.comp.chars[S.comp.slot]);
+  return S.comp.chars[S.comp.slot];
 }
-function slotArr(s,i){while(s.slots.length<=i)s.slots.push([]);return s.slots[i]}
+function slotArr(i){var w=W();while(w.slots.length<=i)w.slots.push([]);return w.slots[i]}
 function zoneArr(k){
-  if(k==="base")return sit().base;
-  if(k==="neg")return sit().neg;
+  if(k==="base")return W().base;
+  if(k==="neg")return W().neg;
+  if(k==="slot")return S.comp.chars.length?slotArr(S.comp.slot):null;
   var c=curChar();if(!c)return null;
   if(k==="look")return c.look;
   if(k==="outfit")return c.outfit;
-  if(k==="slot")return slotArr(sit(),S.comp.slot);
   return null;
 }
 var ZKEYS=["base","neg","look","outfit","slot"];
 function tgtKey(){var k=S.comp.tgt;return (k!=="neg"&&zoneArr(k))?k:"base"}
+function workName(){var w=W();return w.name?"「"+w.name+"」":"（未保存のシチュエーション）"}
 function tgtLabel(){
-  var k=tgtKey(),s=sit(),c=curChar();
-  if(k==="base")return "「"+s.name+"」のベース";
-  if(k==="slot")return "「"+s.name+"」でのキャラ"+(S.comp.slot+1)+"への追加";
+  var k=tgtKey(),c=curChar();
+  if(k==="base")return workName()+"のベース";
+  if(k==="slot")return workName()+"でのキャラ"+(S.comp.slot+1)+"への追加";
   return "キャラ「"+c.name+"」の"+(k==="look"?"外見":"服装");
 }
 function eachChip(fn){
-  S.sits.forEach(function(s){s.base.concat(s.neg).forEach(fn);s.slots.forEach(function(a){a.forEach(fn)})});
-  S.chars.forEach(function(c){c.look.concat(c.outfit).forEach(fn)});
+  var walk=function(a){(a||[]).forEach(fn)};
+  S.prompts.forEach(function(p){
+    if(p.kind==="sit"){walk(p.base);walk(p.neg);(p.slots||[]).forEach(walk)}
+    if(p.kind==="char"){walk(p.look);walk(p.outfit)}
+  });
+  var w=W();walk(w.base);walk(w.neg);w.slots.forEach(walk);
+  S.comp.chars.forEach(function(c){if(c){walk(c.look);walk(c.outfit)}});
+}
+// 変更の有無：登録内容と作業用コピーを比べる
+function sig(a){return JSON.stringify((a||[]).map(function(c){return [c.text,c.w,!!c.nl]}))}
+function slotsSig(s){var t=normSlotsSig(s);return JSON.stringify(t)}
+function normSlotsSig(s){var a=(s||[]).map(sig);while(a.length&&a[a.length-1]==="[]")a.pop();return a}
+function sitSig(o){return [sig(o.base),sig(o.neg),slotsSig(o.slots),!!o.noOutfit,str(o.free).trim()].join("|")}
+function charSig(o){return [o.sex,sig(o.look),sig(o.outfit)].join("|")}
+function workDirty(){
+  var w=W(),p=byId(w.from);
+  if(!p||p.kind!=="sit")return !!(w.base.length||w.neg.length||w.free.trim()||w.slots.some(function(a){return a.length}));
+  return sitSig(w)!==sitSig(p);
+}
+function charDirty(c){
+  if(!c)return false;
+  var p=byId(c.from);
+  if(!p||p.kind!=="char")return true;
+  return charSig(c)!==charSig(p);
 }
 
 /* ---------- 出力 ---------- */
-// カンマ・改行で区切る（括弧の中のカンマとエスケープ済み文字は区切らない）
-function splitTop(s){
-  var out=[],buf="",d=0,i,ch;
-  for(i=0;i<s.length;i++){
-    ch=s[i];
-    if(ch==="\\"&&i+1<s.length){buf+=ch+s[i+1];i++;continue}
-    if(ch==="("||ch==="["||ch==="{")d++;
-    else if((ch===")"||ch==="]"||ch==="}")&&d>0)d--;
-    if(d===0&&(ch===","||ch==="\n")){out.push(buf);buf=""}else buf+=ch;
-  }
-  out.push(buf);
-  return out.map(function(t){return t.trim()}).filter(Boolean);
-}
 function tokKey(t){
   return t.replace(/\\(.)/g,"$1").replace(/_/g," ").replace(/\s+/g," ").trim().toLowerCase();
 }
@@ -741,8 +886,6 @@ function wrapW(text,w,fmt){
   }
   return "("+text+":"+n+")";
 }
-// items: [{text,w}] → {out: 出力文字列, plain: 重み記法を除いたテキスト（トークン概算用）}
-// opt.drop: 除外するタグの判定（自動人数タグと重複する既存タグなど）
 // 区切り文字でつなぐ。前の要素が文末（. ! ? 。）で終わる場合は、カンマを付けずにスペースでつなぐ
 function joinParts(arr,sep){
   var o="";
@@ -753,8 +896,9 @@ function joinParts(arr,sep){
   });
   return o;
 }
-// opt.seen: 重複判定を複数の出力で共有する場合に渡す
-// c.nl（文章）の項目は分割・重複除去・エスケープ・人数タグ置換の対象外
+// items: [{text,w,nl}] → {out: 出力文字列, plain: 重み記法を除いたテキスト（トークン概算用）}
+// opt.drop: 除外するタグの判定（自動人数タグと重複する既存タグ） / opt.seen: 重複判定を共有する場合に渡す
+// nl（文章）の項目は分割・重複除去・エスケープ・人数タグ置換の対象外
 function assemble(items,fmt,opt){
   opt=opt||{};
   var seen=opt.seen||{},parts=[],plain=[],inner=S.cfg.sep.replace(/\n/g," ");
@@ -782,37 +926,38 @@ function countTag(chars){
   return a.join(", ");
 }
 function compose(){
-  var svc=S.comp.svc,fmt=svc==="pixai"?"paren":S.cfg.naiFmt,s=sit(),cs=selChars().slice(0,maxCh());
-  var auto=S.cfg.auto&&cs.length>0,ct=auto?countTag(cs):"";
-  var opt={drop:auto&&ct?isCountTag:null};
+  var svc=S.comp.svc,fmt=svc==="pixai"?"paren":S.cfg.naiFmt,w=W();
+  var cs=[];
+  S.comp.chars.forEach(function(c,i){if(c&&i<maxCh())cs.push({c:c,i:i})});
+  var auto=S.cfg.auto&&cs.length>0,ct=auto?countTag(cs.map(function(x){return x.c})):"";
+  var drop=auto&&ct?isCountTag:null;
   var base=[];
   if(ct)base.push({text:ct,w:1,keep:true});
-  base=base.concat(s.base);
-  if(s.free&&s.free.trim())base.push({text:s.free.trim(),w:1});
+  base=base.concat(w.base);
+  if(w.free&&w.free.trim())base.push({text:w.free.trim(),w:1});
   var charItems=function(c,i){
     var it=[];
     if(svc==="nai"&&S.cfg.auto&&c.sex!=="other")it.push({text:c.sex,w:1,keep:true});
     it=it.concat(c.look);
-    if(!s.noOutfit)it=it.concat(c.outfit);
-    return it.concat(s.slots[i]||[]);
+    if(!w.noOutfit)it=it.concat(c.outfit);
+    return it.concat(w.slots[i]||[]);
   };
   var boxes=[];
   if(svc==="nai"){
-    boxes.push({label:"ベースプロンプト",a:assemble(base,fmt,opt)});
-    cs.forEach(function(c,i){boxes.push({label:"キャラ"+(i+1)+"："+c.name,a:assemble(charItems(c,i),fmt,opt),sm:true})});
-    boxes.push({label:"除外したい要素（ネガティブ）",a:assemble(s.neg,fmt),neg:true,sm:true});
+    boxes.push({label:"ベースプロンプト",a:assemble(base,fmt,{drop:drop})});
+    cs.forEach(function(x,n){boxes.push({label:"キャラ"+(n+1)+"："+x.c.name,a:assemble(charItems(x.c,x.i),fmt,{drop:drop}),sm:true})});
+    boxes.push({label:"除外したい要素（ネガティブ）",a:assemble(w.neg,fmt),neg:true,sm:true});
   }else{
     // ベース → キャラ1 → キャラ2 … の順に1本にする（重複判定は全体で共有）
-    var seen={},segs=[assemble(base,fmt,{drop:opt.drop,seen:seen})];
-    cs.forEach(function(c,i){
-      segs.push(assemble(charItems(c,i).filter(function(x){return !x.keep}),fmt,{drop:opt.drop,seen:seen}));
+    var seen={},segs=[assemble(base,fmt,{drop:drop,seen:seen})];
+    cs.forEach(function(x){
+      segs.push(assemble(charItems(x.c,x.i).filter(function(t){return !t.keep}),fmt,{drop:drop,seen:seen}));
     });
     segs=segs.filter(function(a){return a.out});
     var jn=S.cfg.pxJoin==="para"?"\n\n":S.cfg.sep;
-    boxes.push({label:"プロンプト",a:{
-      out:joinParts(segs.map(function(a){return a.out}),jn),
+    boxes.push({label:"プロンプト",a:{out:joinParts(segs.map(function(a){return a.out}),jn),
       plain:segs.map(function(a){return a.plain}).join(", ")}});
-    boxes.push({label:"ネガティブ",a:assemble(s.neg,fmt),neg:true,sm:true});
+    boxes.push({label:"ネガティブ",a:assemble(w.neg,fmt),neg:true,sm:true});
   }
   return {svc:svc,boxes:boxes};
 }
@@ -837,7 +982,13 @@ function hintFor(a,svc){
   return h;
 }
 
-/* ---------- 描画 ---------- */
+/* ---------- 描画：一覧・絞り込み ---------- */
+function allCats(){
+  var cats=S.cats.slice();
+  for(var i=0;i<S.prompts.length;i++)if(cats.indexOf(S.prompts[i].cat)<0)cats.push(S.prompts[i].cat);
+  return cats;
+}
+function syncCats(){S.cats=allCats()}
 function counts(){
   var m={},i,p;
   for(i=0;i<S.prompts.length;i++){p=S.prompts[i];
@@ -861,8 +1012,12 @@ function renderSide(){
     (S.f.tags.indexOf(x)>=0?" on":"")+'" data-t="'+esc(x)+'">'+esc(x)+'</button>'}).join(""):
     '<span class="hint">タグはまだありません</span>';
   document.querySelectorAll("#tagMode [data-m]").forEach(function(b){b.classList.toggle("on",b.dataset.m===S.f.tagMode)});
+  document.querySelectorAll(".kind").forEach(function(x){x.classList.toggle("on",x.dataset.kind===S.f.kind)});
   $("#catList").innerHTML=cats.map(function(x){return '<option value="'+esc(x)+'">'}).join("");
   $("#stat").textContent=S.prompts.length+" 件登録";
+}
+function hayOf(p){
+  return (p.name+" "+p.text+" "+p.tags.join(" ")+" "+p.note+" "+p.cat).toLowerCase();
 }
 function filtered(){
   var q=S.f.q.trim().toLowerCase().split(/\s+/).filter(Boolean);
@@ -875,7 +1030,7 @@ function filtered(){
       if(and?hit<ft.length:hit===0)return false;
     }
     if(q.length){
-      var hay=(p.name+" "+p.text+" "+p.tags.join(" ")+" "+p.note+" "+p.cat).toLowerCase();
+      var hay=hayOf(p);
       for(var i=0;i<q.length;i++)if(hay.indexOf(q[i])<0)return false;
     }
     return true;
@@ -933,11 +1088,12 @@ function renderList(){
     return;
   }
   $("#rows").innerHTML=r.map(function(p){
-    var on=!!S.sel[p.id];
+    var on=!!S.sel[p.id],big=p.kind==="sit"||p.kind==="char";
     return '<div class="row '+p.kind+(on?" sel":"")+'" data-id="'+esc(p.id)+'" tabindex="0">'+
       '<button class="chk'+(on?" on":"")+'" data-a="sel" role="checkbox" aria-checked="'+on+
         '" aria-label="選択">✓</button>'+
-      '<div class="rmain"><div class="rname">'+esc(p.name||"(名称なし)")+(p.nl?' <span class="nlb">文章</span>':"")+
+      '<div class="rmain"><div class="rname">'+(big?'<span class="kb '+p.kind+'">'+KLAB[p.kind]+'</span>':"")+
+        esc(p.name||"(名称なし)")+(p.nl?' <span class="nlb">文章</span>':"")+
         (p.fav?' <span class="star on">★</span>':"")+'</div>'+
       '<div class="rtext">'+esc(p.text)+'</div></div>'+
       '<span class="rcat">'+esc(p.cat)+'</span>'+
@@ -949,6 +1105,8 @@ function renderList(){
       '</span></div>';
   }).join("");
 }
+
+/* ---------- 描画：組み立て ---------- */
 function chipHTML(c,k){
   return '<div class="chip'+(k==="neg"?" n":"")+'" data-c="'+esc(c.cid)+'" data-k="'+k+'" title="'+esc(c.text)+'">'+
     (c.nl?'<span class="nlb">文</span>':"")+'<span class="cn">'+esc(c.name||c.text)+'</span>'+
@@ -967,45 +1125,56 @@ function zoneHTML(k,label,arr,empty){
     '<div class="chips" data-k="'+k+'">'+(arr.length?arr.map(function(c){return chipHTML(c,k)}).join(""):
       '<span class="hint" style="padding:6px">'+esc(empty)+'</span>')+'</div></div>';
 }
-function charOptions(sel){
-  return S.chars.map(function(c){return '<option value="'+esc(c.id)+'"'+(c.id===sel?" selected":"")+'>'+esc(c.name)+'</option>'}).join("")+
-    '<option value="__new">＋ 新しいキャラを作る</option>';
-}
 function updateOut(){
   var o=compose();S.out=o;
+  var n=S.comp.chars.filter(Boolean).length;
   $("#outBox").innerHTML=o.boxes.map(function(b,i){
     return '<div class="zone"><div class="zhead"><span class="zlab"'+(b.neg?' style="color:var(--neg)"':'')+'>'+esc(b.label)+'</span>'+
       '<span class="grow"></span><span class="hint">'+esc(hintFor(b.a,o.svc))+'</span>'+
       '<button class="btn mini" data-cp="'+i+'">コピー</button></div>'+
       '<textarea class="out'+(b.sm?" sm":"")+'" readonly>'+esc(b.a.out)+'</textarea></div>';
-  }).join("")+(o.svc==="pixai"&&S.comp.chars.length>1?
+  }).join("")+(o.svc==="pixai"&&n>1?
     '<p class="hint" style="margin:0 0 8px">PixAI では全キャラのタグが1本にまとまるため、どのタグがどのキャラに効くかは指定できません。</p>':"");
+  var wd=workDirty();
+  $("#wDirty").style.display=wd?"":"none";
 }
 function renderComp(){
   if(drag&&drag.active)return;
-  var s=sit(),n=S.comp.chars.length,c=curChar();
+  var w=W(),src=byId(w.from),n=S.comp.chars.length,c=curChar();
   document.querySelectorAll("#svc [data-svc]").forEach(function(b){b.classList.toggle("on",b.dataset.svc===S.comp.svc)});
-  $("#sitSel").innerHTML=S.sits.map(function(x){return '<option value="'+esc(x.id)+'"'+(x.id===s.id?" selected":"")+'>'+esc(x.name)+'</option>'}).join("");
-  $("#sitDel").disabled=S.sits.length<2;
-  $("#sitZones").innerHTML=zoneHTML("base","ベース",s.base,"一覧のプロンプトをクリックすると「追加先」に入ります")+
-    zoneHTML("neg","ネガティブ",s.neg,"ネガのプロンプトは自動でここに入ります");
-  $("#free").value=s.free;
-  $("#noOutfit").checked=s.noOutfit;
+  var nm=$("#wName");
+  nm.textContent=w.name||(src?src.name:"（未保存：一覧から選ぶか、項目を追加して「別件として保存」）");
+  nm.classList.toggle("none",!w.name);
+  $("#wSave").disabled=!src||src.kind!=="sit";
+  $("#wRevert").disabled=!src||src.kind!=="sit";
+  $("#sitZones").innerHTML=zoneHTML("base","ベース",w.base,"一覧のプロンプトをクリックすると「追加先」に入ります")+
+    zoneHTML("neg","ネガティブ",w.neg,"ネガのプロンプトは自動でここに入ります");
+  $("#free").value=w.free;
+  $("#noOutfit").checked=w.noOutfit;
   $("#charCnt").textContent=n+" / "+maxCh()+(n>maxCh()?"（PixAI では先頭 "+PIXAI_MAX+" 人だけ出力）":"");
   $("#bAddSlot").disabled=n>=maxCh();
-  $("#slots").innerHTML=n?S.comp.chars.map(function(id,i){
+  $("#slots").innerHTML=n?S.comp.chars.map(function(ch,i){
     return '<div class="slot'+(i===S.comp.slot?" on":"")+'" data-i="'+i+'"><span class="sn">キャラ'+(i+1)+'</span>'+
-      '<select class="fld" data-slot="'+i+'">'+charOptions(id)+'</select>'+
+      '<span class="wname'+(ch?"":" none")+'" style="flex:1">'+(ch?esc(ch.name):"（未選択：一覧でキャラをクリック）")+'</span>'+
+      (charDirty(ch)?'<span class="dirty">未保存の変更</span>':'')+
       (i>0?'<button class="ico" data-up="'+i+'" title="前の枠と入れ替え">↑</button>':'<span style="width:26px;flex:none"></span>')+
-      '<button class="ico" data-rmslot="'+i+'" title="この枠を外す（キャラは削除されません）">×</button></div>';
-  }).join(""):'<div class="hint" style="padding:2px 2px 10px">キャラはまだ選ばれていません。「＋キャラ枠」で追加してください。</div>';
-  $("#cedit").style.display=c?"":"none";
-  if(c){
-    $("#cName").textContent=c.name;
-    $("#cSex").value=c.sex;
-    $("#charZones").innerHTML=zoneHTML("look","外見",c.look,"髪・目・体型など、どのシチュエーションでも使うタグ")+
-      zoneHTML("outfit","服装",c.outfit,"いつもの服装（シチュエーション側で外せます）")+
-      zoneHTML("slot","「"+s.name+"」でのキャラ"+(S.comp.slot+1)+"への追加",slotArr(s,S.comp.slot),
+      '<button class="ico" data-rmslot="'+i+'" title="この枠を外す（登録したキャラは消えません）">×</button></div>';
+  }).join(""):'<div class="hint" style="padding:2px 2px 10px">キャラはまだ入っていません。一覧でキャラをクリックするか、「＋キャラ枠」で枠を作ってください。</div>';
+  $("#cedit").style.display=n?"":"none";
+  if(n){
+    var csrc=c&&byId(c.from);
+    $("#cName").textContent=c?c.name:"キャラ"+(S.comp.slot+1)+"（未選択）";
+    $("#cDirty").style.display=charDirty(c)?"":"none";
+    $("#cSex").style.display=c?"":"none";
+    $("#cActs").style.display=c?"":"none";
+    if(c){
+      $("#cSex").value=c.sex;
+      $("#cSave").disabled=!csrc||csrc.kind!=="char";
+      $("#cRevert").disabled=!csrc||csrc.kind!=="char";
+    }
+    $("#charZones").innerHTML=(c?zoneHTML("look","外見",c.look,"髪・目・体型など、どのシチュエーションでも使うタグ")+
+      zoneHTML("outfit","服装",c.outfit,"いつもの服装（シチュエーション側で外せます）"):"")+
+      zoneHTML("slot",(w.name?"「"+w.name+"」":"このシチュエーション")+"でのキャラ"+(S.comp.slot+1)+"への追加",slotArr(S.comp.slot),
         "表情・ポーズ・動作タグ（source#hug など）。キャラを入れ替えても枠に残ります");
   }
   updateOut();
@@ -1013,8 +1182,37 @@ function renderComp(){
 }
 function render(){renderSide();renderList();renderComp()}
 
-/* ---------- 操作 ---------- */
+/* ---------- 操作：組み立てへの読み込み ---------- */
+function confirmDiscard(what){return confirm(what+"の変更はまだ保存されていません。破棄してよろしいですか？")}
+function loadSit(p){
+  if(workDirty()&&W().from!==p.id&&!confirmDiscard("組み立て中のシチュエーション"))return false;
+  if(workDirty()&&W().from===p.id&&!confirmDiscard("「"+p.name+"」"))return false;
+  S.comp.work=workFrom(p);S.comp.tgt="base";
+  p.uses=(p.uses||0)+1;
+  return true;
+}
+function loadChar(p){
+  var ch=S.comp.chars,i=S.comp.slot;
+  if(!ch.length){ch.push(null);i=S.comp.slot=0}
+  var cur=ch[i];
+  if(cur&&charDirty(cur)&&!confirmDiscard("キャラ「"+cur.name+"」"))return false;
+  var j=-1;for(var k=0;k<ch.length;k++)if(k!==i&&ch[k]&&ch[k].from===p.id)j=k;
+  if(j>=0&&!confirm("「"+p.name+"」はキャラ"+(j+1)+"にも入っています。この枠にも入れますか？"))return false;
+  ch[i]=charFrom(p);S.comp.tgt="look";
+  p.uses=(p.uses||0)+1;
+  return true;
+}
 function addToMemo(p,quiet){
+  if(p.kind==="sit"){
+    if(quiet)return false;
+    if(loadSit(p)){renderList();renderComp();save();toast("シチュエーション「"+p.name+"」を組み立てに読み込みました")}
+    return false;
+  }
+  if(p.kind==="char"){
+    if(quiet)return false;
+    if(loadChar(p)){renderList();renderComp();save();toast("キャラ「"+p.name+"」をキャラ"+(S.comp.slot+1)+"に入れました")}
+    return false;
+  }
   var k=p.kind==="neg"?"neg":tgtKey(),arr=zoneArr(k),i;
   if(!S.cfg.dup)for(i=0;i<arr.length;i++)if(arr[i].text===p.text){
     if(!quiet)toast("すでに入っています");return false}
@@ -1023,7 +1221,7 @@ function addToMemo(p,quiet){
   if(quiet)return true;
   renderList();renderComp();save();
   var nm=String(p.name||p.text);if(nm.length>16)nm=nm.slice(0,16)+"…";
-  toast("「"+nm+"」→ "+(k==="neg"?"「"+sit().name+"」のネガティブ":tgtLabel()));
+  toast("「"+nm+"」→ "+(k==="neg"?workName()+"のネガティブ":tgtLabel()));
   return true;
 }
 function findChip(cid){
@@ -1032,6 +1230,21 @@ function findChip(cid){
     for(var i=0;i<arr.length;i++)if(arr[i].cid===cid)return {arr:arr,i:i,c:arr[i]};
   }
   return null;
+}
+
+/* ---------- 操作：保存 ---------- */
+function setEntrySit(p,w){
+  var base=w.base.slice();
+  if(w.free&&w.free.trim()){base=base.concat(textToChips(w.free));w.base=base;w.free=""}
+  p.base=cloneChips(base);p.neg=cloneChips(w.neg);p.slots=normSlots(w.slots.map(cloneChips));p.noOutfit=!!w.noOutfit;
+  p.text=summary(p);
+}
+function setEntryChar(p,c){
+  p.sex=c.sex;p.look=cloneChips(c.look);p.outfit=cloneChips(c.outfit);p.text=summary(p);
+}
+function newEntry(kind,name,src){
+  return {id:uid(),kind:kind,cat:src?src.cat:(kind==="sit"?CAT_SIT:CAT_CHAR),name:name,tags:src?src.tags.slice():[],
+    note:src?src.note:"",fav:false,uses:0,created:Date.now()};
 }
 function copy(txt){
   if(!txt){toast("コピーするものがありません");return}
@@ -1056,21 +1269,24 @@ function stamp(t){
   return d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+"-"+p(d.getHours())+p(d.getMinutes());
 }
 function backupJSON(d){
-  return JSON.stringify({v:2,prompts:d.prompts,cats:d.cats,sits:d.sits,chars:d.chars,comp:d.comp},null,1);
+  if(d.sits||d.tabs)return JSON.stringify(d,null,1); // 移行前データはそのまま
+  return JSON.stringify({v:3,prompts:d.prompts,cats:d.cats,comp:d.comp},null,1);
 }
-function cloneChips(a){return a.map(function(c){return {cid:uid(),pid:c.pid,name:c.name,text:c.text,w:c.w,nl:!!c.nl}})}
 
 /* ---------- 取り込み ---------- */
 var HEAD={
   cat:["カテゴリ","分類","category","cat"],
   name:["表示名","名前","名称","ラベル","name","label","title"],
-  text:["プロンプト","本文","内容","prompt","text","value"],
+  text:["プロンプト","本文","内容","ベース","外見","prompt","text","value","base"],
   tags:["タグ","tag","tags"],
   note:["メモ","備考","説明","note","memo","description"],
   kind:["種別","タイプ","kind","type"],
-  nl:["形式","format","style"]
+  nl:["形式","format","style"],
+  neg:["ネガティブ","negative"],
+  outfit:["服装","outfit"],
+  sex:["性別","sex","gender"]
 };
-var FIELDS=["cat","name","text","tags","note","kind","nl"];
+var FIELDS=["cat","name","text","tags","note","kind","nl","neg","outfit","sex"];
 // 1行目が見出し行かどうかを判定し、列番号の対応表を返す（見出しでなければ null）
 function headerMap(row){
   var m={},hit=0;
@@ -1094,13 +1310,22 @@ function rowObj(arr,m){
   }
   return o;
 }
+function kindOf(v){
+  v=str(v);
+  if(/シチュ|situation|scene/i.test(v))return "sit";
+  if(/キャラ|character|char/i.test(v))return "char";
+  if(/neg|ネガ|除外|マイナス/i.test(v))return "neg";
+  return "pos";
+}
 function toPrompt(o){
-  var text=str(o.text).trim();
-  if(!text)return null;
-  var kind=/neg|ネガ|除外|マイナス/i.test(str(o.kind))?"neg":"pos";
-  return {id:uid(),cat:str(o.cat).trim()||OTHER,name:str(o.name).trim()||text.slice(0,28),text:text,
-    tags:splitTags(o.tags),note:str(o.note).trim(),kind:kind,
-    nl:/文章|自然|natural|prose|sentence/i.test(str(o.nl)),fav:false,uses:0,created:Date.now()-Math.random()};
+  var kind=kindOf(o.kind),base={id:uid(),kind:kind,cat:str(o.cat).trim(),name:str(o.name).trim(),
+    tags:splitTags(o.tags),note:str(o.note).trim(),fav:false,uses:0,created:Date.now()-Math.random()};
+  if(kind==="sit"){base.base=textToChips(o.text);base.neg=textToChips(o.neg);base.slots=[];base.noOutfit=false}
+  else if(kind==="char"){
+    base.look=textToChips(o.text);base.outfit=textToChips(o.outfit);
+    base.sex=/男|boy|male/i.test(str(o.sex))?"boy":(/その他|other/i.test(str(o.sex))?"other":"girl");
+  }else{base.text=str(o.text);base.nl=/文章|自然|natural|prose|sentence/i.test(str(o.nl))}
+  return normPrompt(base,0,{});
 }
 function openImport(info){$("#impInfo").textContent=info;$("#mImp").classList.add("on")}
 function readFile(f){
@@ -1111,18 +1336,12 @@ function readFile(f){
         var d=JSON.parse(r.result);
         var raw=Array.isArray(d)?d:(d&&d.prompts);
         if(!Array.isArray(raw))throw 0;
-        var rows=normPrompts(raw);
-        if(!rows.length){toast("このJSONには読み取れるプロンプトがありません");return}
-        var sits=null,chars=null,comp=null;
-        if(!Array.isArray(d)){
-          if(Array.isArray(d.sits)){sits=normSits(d.sits);chars=normChars(d.chars);comp=d.comp}
-          else if(Array.isArray(d.tabs))sits=tabsToSits(d.tabs);
-          if(sits&&!sits.length)sits=null;
-        }
-        S.pending={rows:rows,isBackup:true,sits:sits,chars:chars,comp:comp,cats:Array.isArray(d)?null:normCats(d.cats)};
-        var skip=raw.length-rows.length;
-        openImport("バックアップJSON："+rows.length+" 件"+(skip?"（不正な "+skip+" 件は除外）":"")+"。"+
-          (sits?"全置換すると、シチュエーション "+sits.length+" 件"+(chars?"・キャラ "+chars.length+" 件":"")+"も復元されます。":""));
+        var u=upgrade(d);
+        if(!u.prompts.length){toast("このJSONには読み取れる項目がありません");return}
+        S.pending={rows:u.prompts,isBackup:true,cats:u.cats,comp:u.comp};
+        var ns=u.prompts.filter(function(p){return p.kind==="sit"}).length,nc=u.prompts.filter(function(p){return p.kind==="char"}).length;
+        openImport("バックアップJSON："+u.prompts.length+" 件（うちシチュエーション "+ns+"・キャラ "+nc+"）"+
+          (u.legacy?"。旧形式のシチュエーション・キャラは一覧の項目に変換しました":"")+"。");
       }catch(e){toast("このJSONは読み込めません")}
     };
     r.readAsText(f);return;
@@ -1145,16 +1364,15 @@ function readFile(f){
   r.readAsArrayBuffer(f);
 }
 function snapshot(){
-  return JSON.parse(JSON.stringify({prompts:S.prompts,cats:S.cats,sits:S.sits,chars:S.chars,comp:S.comp}));
+  return JSON.parse(JSON.stringify({prompts:S.prompts,cats:S.cats,comp:S.comp}));
 }
 function restoreSnap(s){
-  S.prompts=normPrompts(s.prompts);
-  S.cats=normCats(s.cats);
-  if(Array.isArray(s.sits)){S.sits=normSits(s.sits);S.chars=normChars(s.chars)}
-  else if(Array.isArray(s.tabs))S.sits=tabsToSits(s.tabs); // 旧形式のバックアップ
-  normComp(s.comp||S.comp);
+  var u=upgrade(s);
+  S.prompts=u.prompts;S.cats=u.cats;
+  if(u.comp)S.comp=u.comp;
   syncCats();S.sel={};
 }
+function dupKey(p){return p.kind+"\u0000"+(p.kind==="sit"||p.kind==="char"?p.name+"\u0000":"")+p.text}
 function applyImport(replace){
   var p=S.pending;if(!p)return;
   var rows=p.rows;
@@ -1165,27 +1383,33 @@ function applyImport(replace){
     S.prompts=rows.slice();
     if(p.isBackup){
       if(p.cats&&p.cats.length)S.cats=p.cats;
-      if(p.sits)S.sits=p.sits;
-      if(p.chars)S.chars=p.chars;
-      if(p.sits||p.chars)normComp(p.comp||{});
+      if(p.comp)S.comp=p.comp;
     }
     S.sel={};
     setUndo("全置換を取り消しました",function(){restoreSnap(snap)});
     toast(S.prompts.length+" 件に置き換えました","元に戻す");
   }else{
     var have={},i,n=0;
-    for(i=0;i<S.prompts.length;i++)have[S.prompts[i].text]=1;
-    for(i=0;i<rows.length;i++)if(!have[rows[i].text]){
-      rows[i].id=uid();S.prompts.push(rows[i]);have[rows[i].text]=1;n++}
+    for(i=0;i<S.prompts.length;i++)have[dupKey(S.prompts[i])]=1;
+    for(i=0;i<rows.length;i++)if(!have[dupKey(rows[i])]){
+      rows[i].id=uid();S.prompts.push(rows[i]);have[dupKey(rows[i])]=1;n++}
     toast(n+" 件追加しました（重複 "+(rows.length-n)+" 件は除外）");
   }
   syncCats();
   S.pending=null;$("#mImp").classList.remove("on");render();save();
 }
+var SEXLAB={girl:"女性",boy:"男性",other:"その他"};
 function sheetRows(){
   return S.prompts.map(function(p){
-    return {"カテゴリ":p.cat,"表示名":p.name,"プロンプト":p.text,
-      "タグ":p.tags.join(", "),"メモ":p.note,"種別":p.kind==="neg"?"ネガ":"ポジ","形式":p.nl?"文章":"タグ"};
+    var sit=p.kind==="sit",ch=p.kind==="char";
+    return {"カテゴリ":p.cat,"表示名":p.name,
+      "プロンプト":sit?chipsToText(p.base):(ch?chipsToText(p.look):p.text),
+      "タグ":p.tags.join(", "),"メモ":p.note,
+      "種別":{pos:"ポジ",neg:"ネガ",sit:"シチュ",char:"キャラ"}[p.kind],
+      "形式":sit||ch?"":(p.nl?"文章":"タグ"),
+      "ネガティブ":sit?chipsToText(p.neg):"",
+      "服装":ch?chipsToText(p.outfit):"",
+      "性別":ch?SEXLAB[p.sex]:""};
   });
 }
 function expo(kind){
@@ -1196,28 +1420,30 @@ function expo(kind){
   if(kind!=="tpl"&&!S.prompts.length){toast("書き出すデータがありません");return}
   needXLSX().then(function(X){
     if(kind==="tpl"){
-      var t=[{"カテゴリ":"オリジナルキャラ","表示名":"ミナ","プロンプト":"silver hair, red eyes","タグ":"自作, 女性","メモ":"基本形","種別":"ポジ","形式":"タグ"},
-             {"カテゴリ":"その他","表示名":"低品質除外","プロンプト":"lowres, bad anatomy","タグ":"共通","メモ":"","種別":"ネガ","形式":"タグ"},
-             {"カテゴリ":"その他","表示名":"夕暮れの海辺","プロンプト":"A quiet beach at sunset, warm rim light and soft bokeh.","タグ":"","メモ":"","種別":"ポジ","形式":"文章"}];
+      var e={"タグ":"","メモ":"","形式":"","ネガティブ":"","服装":"","性別":""};
+      var row=function(o){var r={};for(var k in {"カテゴリ":1,"表示名":1,"プロンプト":1})r[k]=o[k];for(k in e)r[k]=o[k]!=null?o[k]:e[k];r["種別"]=o["種別"];return r};
+      var t=[row({"カテゴリ":"その他","表示名":"高品質","プロンプト":"masterpiece, best quality","タグ":"共通","種別":"ポジ","形式":"タグ"}),
+             row({"カテゴリ":"その他","表示名":"低品質除外","プロンプト":"lowres, bad anatomy","タグ":"共通","種別":"ネガ","形式":"タグ"}),
+             row({"カテゴリ":"その他","表示名":"夕暮れの海辺（文章）","プロンプト":"A quiet beach at sunset, warm rim light and soft bokeh.","種別":"ポジ","形式":"文章"}),
+             row({"カテゴリ":"シチュエーション","表示名":"海辺の夕暮れ","プロンプト":"masterpiece, beach, sunset","ネガティブ":"lowres, bad anatomy","種別":"シチュ"}),
+             row({"カテゴリ":"キャラ","表示名":"ミナ","プロンプト":"silver hair, red eyes","服装":"school uniform","性別":"女性","タグ":"自作","種別":"キャラ"})];
       var wb=X.utils.book_new();
       X.utils.book_append_sheet(wb,X.utils.json_to_sheet(t),"prompts");
       X.writeFile(wb,"取り込みテンプレート.xlsx");return;
     }
     var wb2=X.utils.book_new();
     var ws=X.utils.json_to_sheet(sheetRows());
-    ws["!cols"]=[{wch:16},{wch:22},{wch:52},{wch:18},{wch:20},{wch:8},{wch:8}];
+    ws["!cols"]=[{wch:16},{wch:22},{wch:52},{wch:18},{wch:20},{wch:8},{wch:8},{wch:40},{wch:30},{wch:8}];
     X.utils.book_append_sheet(wb2,ws,"prompts");
     X.writeFile(wb2,"prompt-library-"+stamp()+"."+(kind==="csv"?"csv":"xlsx"));
   },xlsxFail);
 }
 
-/* ---------- イベント ---------- */
+/* ---------- イベント：一覧・絞り込み ---------- */
 $("#q").addEventListener("input",function(){S.f.q=this.value;renderList()});
 $("#sort").addEventListener("change",function(){S.sort=this.value;renderList()});
 document.querySelectorAll(".kind").forEach(function(b){
-  b.addEventListener("click",function(){
-    document.querySelectorAll(".kind").forEach(function(x){x.classList.remove("on")});
-    b.classList.add("on");S.f.kind=b.dataset.kind;render();});
+  b.addEventListener("click",function(){S.f.kind=b.dataset.kind;render()});
 });
 function toggle(arr,v){var i=arr.indexOf(v);if(i>=0)arr.splice(i,1);else arr.push(v)}
 $("#cats").addEventListener("click",function(e){
@@ -1233,10 +1459,9 @@ $("#tagMode").addEventListener("click",function(e){
   var b=e.target.closest("[data-m]");if(!b)return;
   S.f.tagMode=b.dataset.m;render();
 });
-function promptById(id){for(var i=0;i<S.prompts.length;i++)if(S.prompts[i].id===id)return S.prompts[i];return null}
 $("#list").addEventListener("click",function(e){
   var row=e.target.closest(".row");if(!row)return;
-  var p=promptById(row.dataset.id);
+  var p=byId(row.dataset.id);
   if(!p)return;
   var act=e.target.closest("[data-a]");
   if(!act){addToMemo(p);return}
@@ -1250,15 +1475,18 @@ $("#list").addEventListener("click",function(e){
 });
 $("#selbar").addEventListener("click",function(e){
   var b=e.target.closest("[data-s]");if(!b)return;
-  var ids=selIds(),i,p,n=0;
+  var ids=selIds(),i,p,n=0,skip=0;
   if(b.dataset.s==="clear"){S.sel={};renderList();return}
   if(b.dataset.s==="del"){
     if(confirm(ids.length+" 件を削除します。よろしいですか？（直後なら元に戻せます）"))delPrompts(ids);
     return}
   if(b.dataset.s==="memo"){
-    for(i=0;i<S.prompts.length;i++){p=S.prompts[i];if(S.sel[p.id]&&addToMemo(p,true))n++}
+    for(i=0;i<S.prompts.length;i++){p=S.prompts[i];if(!S.sel[p.id])continue;
+      if(p.kind==="sit"||p.kind==="char"){skip++;continue}
+      if(addToMemo(p,true))n++}
     S.sel={};renderList();renderComp();save();
-    toast(n+" 件を "+tgtLabel()+" に追加しました"+(ids.length>n?"（入っていた "+(ids.length-n)+" 件は除外）":""));
+    toast(n+" 件を "+tgtLabel()+" に追加しました"+(ids.length-n-skip>0?"（入っていた "+(ids.length-n-skip)+" 件は除外）":"")+
+      (skip?"。シチュエーション・キャラ "+skip+" 件はまとめて追加できません":""));
   }
 });
 $("#tgtbar").addEventListener("click",function(e){if(e.target.closest("[data-go]"))showView(3)});
@@ -1278,51 +1506,51 @@ $("#bSelAll").addEventListener("click",function(){
 $("#list").addEventListener("keydown",function(e){
   if(e.key!=="Enter")return;var row=e.target.closest(".row");if(!row||e.target!==row)return;
   e.preventDefault();
-  var p=promptById(row.dataset.id);if(p)addToMemo(p);
+  var p=byId(row.dataset.id);if(p)addToMemo(p);
 });
 
-/* 組み立て：出力先・シチュエーション */
+/* ---------- イベント：組み立て ---------- */
 function changed(){renderComp();save()}
+function pickFrom(kind){S.f.kind=kind;S.f.q="";$("#q").value="";render();showView(1)}
 $("#svc").addEventListener("click",function(e){
   var b=e.target.closest("[data-svc]");if(!b)return;
   S.comp.svc=b.dataset.svc;changed();
 });
-$("#sitSel").addEventListener("change",function(){S.comp.sit=this.value;changed()});
-$("#sitNew").addEventListener("click",function(){
-  var n=prompt("シチュエーションの名前","シチュエーション"+(S.sits.length+1));
+$("#wPick").addEventListener("click",function(){pickFrom("sit")});
+$("#cPick").addEventListener("click",function(){pickFrom("char")});
+$("#wSave").addEventListener("click",function(){
+  var w=W(),p=byId(w.from);if(!p||p.kind!=="sit")return;
+  if(!confirm("「"+p.name+"」を、いまの組み立て内容で上書き保存しますか？"))return;
+  var before=JSON.parse(JSON.stringify(p));
+  setEntrySit(p,w);
+  setUndo("上書き保存を取り消しました",function(){for(var k in before)p[k]=before[k]});
+  renderList();changed();toast("「"+p.name+"」を上書き保存しました","元に戻す");
+});
+$("#wSaveAs").addEventListener("click",function(){
+  var w=W(),src=byId(w.from);
+  var n=prompt("新しいシチュエーションの名前",w.name?w.name+" のコピー":"シチュエーション"+(S.prompts.filter(function(p){return p.kind==="sit"}).length+1));
   if(n==null||!n.trim())return;
-  var s=newSit(n.trim());S.sits.push(s);S.comp.sit=s.id;S.comp.tgt="base";changed();
+  var p=newEntry("sit",n.trim(),src&&src.kind==="sit"?src:null);
+  setEntrySit(p,w);S.prompts.push(p);syncCats();
+  w.from=p.id;w.name=p.name;
+  render();save();toast("シチュエーション「"+p.name+"」として保存しました");
 });
-$("#sitRen").addEventListener("click",function(){
-  var s=sit(),n=prompt("シチュエーションの名前",s.name);
-  if(n&&n.trim()){s.name=n.trim();changed()}
+$("#wRevert").addEventListener("click",function(){
+  var p=byId(W().from);if(!p||p.kind!=="sit")return;
+  if(workDirty()&&!confirmDiscard("「"+p.name+"」"))return;
+  S.comp.work=workFrom(p);changed();toast("登録内容に戻しました");
 });
-$("#sitDup").addEventListener("click",function(){
-  var s=sit(),d={id:uid(),name:s.name+" のコピー",base:cloneChips(s.base),neg:cloneChips(s.neg),free:s.free,
-    slots:s.slots.map(cloneChips),noOutfit:s.noOutfit};
-  S.sits.splice(S.sits.indexOf(s)+1,0,d);S.comp.sit=d.id;changed();toast("複製しました");
+$("#wClear").addEventListener("click",function(){
+  if(workDirty()&&!confirmDiscard("組み立て中のシチュエーション"))return;
+  S.comp.work=emptyWork();S.comp.tgt="base";changed();
 });
-$("#sitDel").addEventListener("click",function(){
-  if(S.sits.length<2)return;
-  var s=sit();
-  if(!confirm("シチュエーション「"+s.name+"」を削除しますか？"))return;
-  S.sits=S.sits.filter(function(x){return x!==s});S.comp.sit=S.sits[0].id;changed();
-});
-$("#free").addEventListener("input",function(){sit().free=this.value;updateOut();save()});
-$("#noOutfit").addEventListener("change",function(){sit().noOutfit=this.checked;updateOut();save()});
+$("#free").addEventListener("input",function(){W().free=this.value;updateOut();save()});
+$("#noOutfit").addEventListener("change",function(){W().noOutfit=this.checked;updateOut();save()});
 
-/* 組み立て：キャラ枠 */
-function makeChar(){
-  var n=prompt("キャラの名前","キャラ"+(S.chars.length+1));
-  if(n==null||!n.trim())return null;
-  var c=newChar(n.trim());S.chars.push(c);return c;
-}
 $("#bAddSlot").addEventListener("click",function(){
   if(S.comp.chars.length>=maxCh())return;
-  var c=null;
-  for(var i=0;i<S.chars.length;i++)if(S.comp.chars.indexOf(S.chars[i].id)<0){c=S.chars[i];break}
-  if(!c){c=makeChar();if(!c)return;S.comp.tgt="look"}
-  S.comp.chars.push(c.id);S.comp.slot=S.comp.chars.length-1;changed();
+  S.comp.chars.push(null);S.comp.slot=S.comp.chars.length-1;changed();
+  toast("一覧でキャラをクリックすると、キャラ"+S.comp.chars.length+"に入ります");
 });
 $("#slots").addEventListener("click",function(e){
   var b=e.target.closest("[data-up],[data-rmslot]"),i;
@@ -1330,50 +1558,37 @@ $("#slots").addEventListener("click",function(e){
     i=+b.dataset.up;var a=S.comp.chars,t=a[i];a[i]=a[i-1];a[i-1]=t;
     S.comp.slot=i-1;changed();return}
   if(b&&b.dataset.rmslot!=null){
-    i=+b.dataset.rmslot;S.comp.chars.splice(i,1);
+    i=+b.dataset.rmslot;var c=S.comp.chars[i];
+    if(c&&charDirty(c)&&!confirmDiscard("キャラ「"+c.name+"」"))return;
+    S.comp.chars.splice(i,1);
     if(S.comp.slot>=S.comp.chars.length)S.comp.slot=Math.max(0,S.comp.chars.length-1);
     changed();return}
   var row=e.target.closest(".slot");
-  if(row&&!e.target.closest("select")&&+row.dataset.i!==S.comp.slot){S.comp.slot=+row.dataset.i;changed()}
-});
-$("#slots").addEventListener("focusin",function(e){
-  var row=e.target.closest(".slot");
-  if(row&&e.target.tagName==="SELECT"&&+row.dataset.i!==S.comp.slot){
-    S.comp.slot=+row.dataset.i;
-    document.querySelectorAll("#slots .slot").forEach(function(x){x.classList.toggle("on",x===row)});
-  }
-});
-$("#slots").addEventListener("change",function(e){
-  var sel=e.target.closest("[data-slot]");if(!sel)return;
-  var i=+sel.dataset.slot,id=sel.value;
-  S.comp.slot=i;
-  if(id==="__new"){var c=makeChar();if(!c){renderComp();return}id=c.id;S.comp.tgt="look"}
-  var j=S.comp.chars.indexOf(id);
-  if(j>=0&&j!==i)S.comp.chars[j]=S.comp.chars[i]; // すでに別の枠にいるキャラなら入れ替え
-  S.comp.chars[i]=id;changed();
+  if(row&&+row.dataset.i!==S.comp.slot){S.comp.slot=+row.dataset.i;changed()}
 });
 $("#cSex").addEventListener("change",function(){var c=curChar();if(c){c.sex=this.value;changed()}});
-$("#cNew").addEventListener("click",function(){
-  var c=makeChar();if(!c)return;
-  S.comp.chars[S.comp.slot]=c.id;S.comp.tgt="look";changed();
+$("#cSave").addEventListener("click",function(){
+  var c=curChar(),p=c&&byId(c.from);if(!p||p.kind!=="char")return;
+  if(!confirm("キャラ「"+p.name+"」を、いまの内容で上書き保存しますか？"))return;
+  var before=JSON.parse(JSON.stringify(p));
+  setEntryChar(p,c);
+  setUndo("上書き保存を取り消しました",function(){for(var k in before)p[k]=before[k]});
+  renderList();changed();toast("キャラ「"+p.name+"」を上書き保存しました","元に戻す");
 });
-$("#cRen").addEventListener("click",function(){
+$("#cSaveAs").addEventListener("click",function(){
   var c=curChar();if(!c)return;
-  var n=prompt("キャラの名前",c.name);if(n&&n.trim()){c.name=n.trim();changed()}
+  var src=byId(c.from);
+  var n=prompt("新しいキャラの名前",c.name+" のコピー");
+  if(n==null||!n.trim())return;
+  var p=newEntry("char",n.trim(),src&&src.kind==="char"?src:null);
+  setEntryChar(p,c);S.prompts.push(p);syncCats();
+  c.from=p.id;c.name=p.name;
+  render();save();toast("キャラ「"+p.name+"」として保存しました");
 });
-$("#cDup").addEventListener("click",function(){
-  var c=curChar();if(!c)return;
-  var d={id:uid(),name:c.name+" のコピー",sex:c.sex,look:cloneChips(c.look),outfit:cloneChips(c.outfit)};
-  S.chars.push(d);S.comp.chars[S.comp.slot]=d.id;changed();toast("複製してこの枠に入れました");
-});
-$("#cDel").addEventListener("click",function(){
-  var c=curChar();if(!c)return;
-  if(!confirm("キャラ「"+c.name+"」を削除しますか？（直後なら元に戻せます）"))return;
-  var snap=snapshot();
-  S.chars=S.chars.filter(function(x){return x!==c});
-  S.comp.chars=S.comp.chars.filter(function(id){return id!==c.id});
-  setUndo("キャラの削除を取り消しました",function(){restoreSnap(snap)});
-  changed();toast("キャラを削除しました","元に戻す");
+$("#cRevert").addEventListener("click",function(){
+  var c=curChar(),p=c&&byId(c.from);if(!p||p.kind!=="char")return;
+  if(charDirty(c)&&!confirmDiscard("キャラ「"+p.name+"」"))return;
+  S.comp.chars[S.comp.slot]=charFrom(p);changed();toast("登録内容に戻しました");
 });
 
 /* 組み立て：チップ・追加先・消去・コピー */
@@ -1395,7 +1610,8 @@ $("#dock").addEventListener("click",function(e){
 $("#dlTxt").addEventListener("click",function(){
   var o=compose(),t=o.boxes.filter(function(b){return b.a.out}).map(function(b){return "## "+b.label+"\n"+b.a.out}).join("\n\n");
   if(!t){toast("出力が空です");return}
-  var name=sit().name+(selChars().length?"_"+selChars().map(function(c){return c.name}).join("+"):"");
+  var cn=S.comp.chars.filter(Boolean).map(function(c){return c.name});
+  var name=(W().name||"組み立て")+(cn.length?"_"+cn.join("+"):"");
   dl(name+"_"+(o.svc==="pixai"?"PixAI":"NovelAI")+".txt",t+"\n");toast(".txtを保存しました");
 });
 
@@ -1489,39 +1705,83 @@ document.addEventListener("touchend",function(e){
 },{passive:false});
 document.addEventListener("touchcancel",function(){if(drag&&drag.touch)dragFinish(false)});
 
-/* 編集モーダル */
+/* ---------- 編集モーダル ---------- */
+function showKindFields(k){
+  $("#gText").style.display=(k==="pos"||k==="neg")?"":"none";
+  $("#gSit").style.display=k==="sit"?"":"none";
+  $("#gChar").style.display=k==="char"?"":"none";
+  $("#gHint").style.display=(k==="sit"||k==="char")?"":"none";
+  $("#edTitle").textContent=(S.editing?"編集：":"追加：")+{pos:"プロンプト",neg:"プロンプト",sit:"シチュエーション",char:"キャラ"}[k];
+}
 function openEdit(p){
   S.editing=p||null;
-  $("#edTitle").textContent=p?"プロンプトを編集":"プロンプトを追加";
+  var k=p?p.kind:(S.f.kind!=="all"?S.f.kind:"pos");
+  $("#eKind").value=k;
+  $("#eKind").disabled=!!p&&(p.kind==="sit"||p.kind==="char"); // 作成後の種別変更はポジ⇔ネガのみ
+  if(p&&(p.kind==="pos"||p.kind==="neg"))Array.prototype.forEach.call($("#eKind").options,function(o){o.disabled=o.value==="sit"||o.value==="char"});
+  else Array.prototype.forEach.call($("#eKind").options,function(o){o.disabled=false});
   $("#eCat").value=p?p.cat:(S.f.cats.length===1?S.f.cats[0]:"");
-  $("#eKind").value=p?p.kind:(S.f.kind==="neg"?"neg":"pos");
   $("#eName").value=p?p.name:"";
-  $("#eText").value=p?p.text:"";
+  $("#eText").value=p&&p.text&&!(p.kind==="sit"||p.kind==="char")?p.text:"";
+  $("#eNl").checked=p?!!p.nl:false;
+  $("#eBase").value=p&&p.kind==="sit"?chipsToText(p.base):"";
+  $("#eNeg").value=p&&p.kind==="sit"?chipsToText(p.neg):"";
+  $("#eNoOutfit").checked=p&&p.kind==="sit"?!!p.noOutfit:false;
+  $("#eSex").value=p&&p.kind==="char"?p.sex:"girl";
+  $("#eLook").value=p&&p.kind==="char"?chipsToText(p.look):"";
+  $("#eOutfit").value=p&&p.kind==="char"?chipsToText(p.outfit):"";
   $("#eTags").value=p?p.tags.join(", "):"";
   $("#eNote").value=p?p.note:"";
-  $("#eNl").checked=p?!!p.nl:false;
+  showKindFields(k);
   $("#mEdit").classList.add("on");
   setTimeout(function(){$("#eName").focus()},30);
 }
+$("#eKind").addEventListener("change",function(){showKindFields(this.value)});
 $("#bNew").addEventListener("click",function(){openEdit(null)});
 $("#eSave").addEventListener("click",function(){
-  var text=$("#eText").value.trim();
-  if(!text){toast("プロンプトを入力してください");$("#eText").focus();return}
-  var o={cat:$("#eCat").value.trim()||OTHER,kind:$("#eKind").value,
-    name:$("#eName").value.trim()||text.slice(0,28),text:text,
-    tags:splitTags($("#eTags").value),note:$("#eNote").value.trim(),nl:$("#eNl").checked};
-  var dupe=null;
-  for(var i=0;i<S.prompts.length;i++)if(S.prompts[i].text===text&&S.prompts[i]!==S.editing){dupe=S.prompts[i];break}
-  if(dupe&&!confirm("同じプロンプトがすでに登録されています（「"+dupe.name+"」／"+dupe.cat+"）。\nそれでも保存しますか？"))return;
-  if(S.editing){
-    var ed=S.editing;
-    for(var k in o)ed[k]=o[k];
-    // シチュエーション・キャラのチップにも変更を反映する
-    eachChip(function(c){if(c.pid===ed.id){c.name=ed.name;c.text=ed.text;c.nl=ed.nl}});
+  var k=$("#eKind").value,ed=S.editing,o,i;
+  var common={cat:$("#eCat").value.trim(),name:$("#eName").value.trim(),
+    tags:splitTags($("#eTags").value),note:$("#eNote").value.trim()};
+  if(k==="sit"){
+    o={kind:"sit",base:textToChips($("#eBase").value,ed&&ed.base),neg:textToChips($("#eNeg").value,ed&&ed.neg),
+      noOutfit:$("#eNoOutfit").checked,slots:ed&&ed.slots?ed.slots:[]};
+    if(!o.base.length&&!o.neg.length){toast("ベースかネガティブを入力してください");$("#eBase").focus();return}
+    common.cat=common.cat||CAT_SIT;
+    common.name=common.name||"シチュエーション"+(S.prompts.filter(function(p){return p.kind==="sit"}).length+1);
+  }else if(k==="char"){
+    o={kind:"char",sex:$("#eSex").value,look:textToChips($("#eLook").value,ed&&ed.look),outfit:textToChips($("#eOutfit").value,ed&&ed.outfit)};
+    if(!o.look.length&&!o.outfit.length){toast("外見か服装を入力してください");$("#eLook").focus();return}
+    common.cat=common.cat||CAT_CHAR;
+    common.name=common.name||"キャラ"+(S.prompts.filter(function(p){return p.kind==="char"}).length+1);
+  }else{
+    var text=$("#eText").value.trim();
+    if(!text){toast("プロンプトを入力してください");$("#eText").focus();return}
+    o={kind:k,text:text,nl:$("#eNl").checked};
+    common.cat=common.cat||OTHER;common.name=common.name||text.slice(0,28);
+    var dupe=null;
+    for(i=0;i<S.prompts.length;i++){var q=S.prompts[i];if((q.kind==="pos"||q.kind==="neg")&&q.text===text&&q!==ed){dupe=q;break}}
+    if(dupe&&!confirm("同じプロンプトがすでに登録されています（「"+dupe.name+"」／"+dupe.cat+"）。\nそれでも保存しますか？"))return;
   }
-  else{o.id=uid();o.fav=false;o.uses=0;o.created=Date.now();S.prompts.push(o)}
+  for(var c in common)o[c]=common[c];
+  if(ed){
+    // 組み立てに読み込み中で、変更していない場合は登録内容に合わせて読み直す
+    var wClean=ed.kind==="sit"&&W().from===ed.id&&!workDirty();
+    var cClean=[];S.comp.chars.forEach(function(ch,j){if(ch&&ch.from===ed.id&&!charDirty(ch))cClean.push(j)});
+    for(var key in o)ed[key]=o[key];
+    if(ed.kind==="sit"||ed.kind==="char")ed.text=summary(ed);
+    else eachChip(function(ch){if(ch.pid===ed.id){ch.name=ed.name;ch.text=ed.text;ch.nl=ed.nl}});
+    if(wClean)S.comp.work=workFrom(ed);
+    else if(ed.kind==="sit"&&W().from===ed.id)W().name=ed.name;
+    S.comp.chars.forEach(function(ch,j){if(ch&&ch.from===ed.id){if(cClean.indexOf(j)>=0)S.comp.chars[j]=charFrom(ed);else ch.name=ed.name}});
+  }else{
+    o.id=uid();o.fav=false;o.uses=0;o.created=Date.now();
+    if(k==="sit"||k==="char")o.text=summary(o);
+    S.prompts.push(o);
+  }
   if(S.cats.indexOf(o.cat)<0)S.cats.push(o.cat);
-  S.editing=null;$("#mEdit").classList.remove("on");render();save();toast("保存しました");
+  S.editing=null;$("#mEdit").classList.remove("on");render();save();
+  toast(ed?"保存しました":(k==="sit"?"シチュエーションを登録しました（一覧でクリックすると組み立てに読み込みます）":
+    k==="char"?"キャラを登録しました（一覧でクリックするとキャラ枠に入ります）":"保存しました"));
 });
 document.querySelectorAll("[data-close]").forEach(function(b){
   b.addEventListener("click",function(){b.closest(".modal").classList.remove("on")})});
@@ -1537,7 +1797,7 @@ document.addEventListener("keydown",function(e){
   }
 });
 
-/* 取り込み / 書き出し */
+/* ---------- 取り込み / 書き出し ---------- */
 $("#bImp").addEventListener("click",function(){$("#file").click();needXLSX().catch(function(){})});
 $("#file").addEventListener("change",function(){if(this.files[0])readFile(this.files[0]);this.value=""});
 $("#impAdd").addEventListener("click",function(){applyImport(false)});
@@ -1559,7 +1819,7 @@ $("#expMenu").addEventListener("click",function(e){
   $("#expMenu").classList.remove("on");expo(b.dataset.x);
 });
 
-/* 設定 */
+/* ---------- 設定 ---------- */
 function renderCatMgr(){
   var c={},i;for(i=0;i<S.prompts.length;i++)c[S.prompts[i].cat]=(c[S.prompts[i].cat]||0)+1;
   $("#catMgr").innerHTML=allCats().map(function(x){
@@ -1597,6 +1857,10 @@ function renderBak(){
   $("#bakBox").style.display=has?"":"none";
   if(has)$("#bakInfo").textContent="直前の全置換の前の状態（"+new Date(S.bak.at).toLocaleString("ja-JP")+"・"+
     ((S.bak.data.prompts||[]).length)+" 件）が残っています。";
+  var mg=!!(S.mig&&S.mig.data);
+  $("#migBox").style.display=mg?"":"none";
+  if(mg)$("#migInfo").textContent="新しい形式（シチュエーション・キャラを一覧の項目にする形）へ移行する前のデータ（"+
+    new Date(S.mig.at).toLocaleString("ja-JP")+"）を残しています。このJSONを「取り込み」→「全置換」すると、移行した直後の状態に戻せます。";
 }
 function renderLibInfo(){
   $("#libInfo").textContent="Excel機能："+(window.XLSX?"SheetJS v"+window.XLSX.version:"未読み込み（取り込み・書き出し時に読み込みます）");
@@ -1613,8 +1877,13 @@ $("#bakSave").addEventListener("click",function(){
   if(!S.bak||!S.bak.data)return;
   dl("prompt-library-before-replace-"+stamp(S.bak.at)+".json",backupJSON(S.bak.data),"application/json");
 });
+$("#migSave").addEventListener("click",function(){
+  if(!S.mig||!S.mig.data)return;
+  dl("prompt-library-before-migration-"+stamp(S.mig.at)+".json",JSON.stringify(S.mig.data,null,1),"application/json");
+});
 $("#bSet").addEventListener("click",function(){
-  $("#sDup").checked=S.cfg.dup;$("#sDedup").checked=S.cfg.dedup;$("#sEsc").checked=S.cfg.escp;$("#sAuto").checked=S.cfg.auto;$("#sPxJoin").value=S.cfg.pxJoin;
+  $("#sDup").checked=S.cfg.dup;$("#sDedup").checked=S.cfg.dedup;$("#sEsc").checked=S.cfg.escp;
+  $("#sAuto").checked=S.cfg.auto;$("#sPxJoin").value=S.cfg.pxJoin;
   $("#sStep").value=String(S.cfg.step);
   $("#sFmt").value=S.cfg.naiFmt;$("#sSep").value=(S.cfg.sep===",\n")?",\\n":S.cfg.sep;
   renderCatMgr();renderBak();renderLibInfo();
@@ -1630,8 +1899,7 @@ $("#sPxJoin").addEventListener("change",function(){S.cfg.pxJoin=this.value;updat
 $("#sSep").addEventListener("change",function(){
   S.cfg.sep=(this.value===",\\n")?",\n":this.value;updateOut();save()});
 
-
-/* 画面タブ（プロンプト / 絞り込み / 組み立て） */
+/* ---------- 画面タブ（プロンプト / 絞り込み / 組み立て） ---------- */
 function showView(n){
   document.querySelectorAll(".view").forEach(function(v){v.classList.toggle("on",v.id==="v"+n)});
   document.querySelectorAll(".mtab").forEach(function(b){b.classList.toggle("on",b.dataset.v===String(n))});
@@ -1644,11 +1912,11 @@ function nfilters(){return (S.f.kind!=="all"?1:0)+S.f.cats.length+S.f.tags.lengt
 function updateNav(){
   var parts=[],fs=$("#fsum");
   setBd("#bd2",nfilters());
-  setBd("#bd3",S.comp.chars.length);
+  setBd("#bd3",S.comp.chars.filter(Boolean).length);
   var tb=$("#tgtbar");
   tb.innerHTML='<span class="fl">追加先</span><span class="fv"></span><button class="btn mini" data-go="1">組み立てを開く</button>';
-  tb.querySelector(".fv").textContent=tgtLabel()+"（ネガは自動でネガティブへ）";
-  if(S.f.kind!=="all")parts.push(S.f.kind==="neg"?"ネガ":"ポジ");
+  tb.querySelector(".fv").textContent=tgtLabel()+"（ネガは自動でネガティブへ／シチュ・キャラは組み立てに読み込み）";
+  if(S.f.kind!=="all")parts.push(KLAB[S.f.kind]);
   if(S.f.cats.length)parts.push(S.f.cats.join(" / "));
   if(S.f.tags.length)parts.push(S.f.tags.map(function(x){return "#"+x}).join(S.f.tagMode==="and"?" & ":" / "));
   if(parts.length){
@@ -1659,14 +1927,13 @@ function updateNav(){
 }
 function resetFilters(){
   S.f.kind="all";S.f.cats=[];S.f.tags=[];
-  document.querySelectorAll(".kind").forEach(function(x){x.classList.toggle("on",x.dataset.kind==="all")});
   render();
 }
 $("#fsum").addEventListener("click",function(e){if(e.target.closest("[data-r]"))resetFilters()});
 $("#fReset").addEventListener("click",resetFilters);
 $("#fGo").addEventListener("click",function(){showView(1)});
 
-/* 起動 */
+/* ---------- 起動 ---------- */
 (function(){
   var w=$("#warn");
   if(MODE==="memory"){
@@ -1678,26 +1945,34 @@ $("#fGo").addEventListener("click",function(){showView(1)});
   var lab={claude:"Claudeアプリ内の保存領域",local:"ブラウザの保存領域",memory:"保存されません（メモリのみ）"};
   $("#storeInfo").textContent="いまの保存先："+lab[MODE];
 })();
-Promise.all([store.get(K_LIB),store.get(K_MEM),store.get(K_CFG),store.get(K_BAK),store.get(K_CMP)]).then(function(r){
-  if(r[0]&&r[0].prompts){S.prompts=normPrompts(r[0].prompts);if(r[0].cats)S.cats=normCats(r[0].cats)}
+S.comp=normComp(null);
+Promise.all([store.get(K_LIB),store.get(K_MEM),store.get(K_CFG),store.get(K_BAK),store.get(K_CMP2),store.get(K_CMP),store.get(K_MIG)]).then(function(r){
+  var lib=r[0]||{},mem1=r[1],c2=r[4],c3=r[5];
   normCfg(r[2]);
   if(r[3]&&r[3].data)S.bak=r[3];
+  if(r[6]&&r[6].data)S.mig=r[6];
   var migrated=false;
-  if(r[4]&&Array.isArray(r[4].sits)){S.sits=normSits(r[4].sits);S.chars=normChars(r[4].chars)}
-  else if(r[1]&&Array.isArray(r[1].tabs)){
-    // 旧「メモ欄」のタブをシチュエーションに移す（旧データは消さずに残す）
-    S.sits=tabsToSits(r[1].tabs);migrated=S.sits.length>0;
-  }
-  normComp(r[4]&&r[4].comp);
-  if(migrated){
-    var old=r[1].tabs.filter(function(t){return t&&t.id===r[1].active})[0];
-    if(old&&S.sits.some(function(s){return s.id===old.id}))S.comp.sit=old.id;
-    save();
+  if(c3&&c3.comp){
+    var u=upgrade({prompts:lib.prompts,cats:lib.cats,comp:c3.comp});
+    S.prompts=u.prompts;S.cats=lib.cats?u.cats:S.cats;S.comp=u.comp;
+  }else{
+    // 旧形式（v2：sits/chars、v1：メモ欄のタブ）を一覧の項目へ移す。移行前のデータは別に残す
+    var old={prompts:lib.prompts||[],cats:lib.cats||S.cats};
+    if(c2&&Array.isArray(c2.sits)){old.sits=c2.sits;old.chars=c2.chars;old.comp=c2.comp}
+    else if(mem1&&Array.isArray(mem1.tabs)){old.tabs=mem1.tabs;old.active=mem1.active}
+    var u2=upgrade(old);
+    S.prompts=u2.prompts;if(lib.cats)S.cats=u2.cats;
+    if(u2.comp)S.comp=u2.comp;
+    if(u2.legacy){
+      migrated=true;
+      S.mig={at:Date.now(),data:old};store.set(K_MIG,S.mig);
+    }
   }
   syncCats();
+  if(migrated)save();
   render();
-  if(migrated)toast("メモ欄のタブを「シチュエーション」に移しました（キャラは「組み立て」で作成してください）");
-}).catch(function(){normComp();render()});
+  if(migrated)toast("シチュエーションとキャラを一覧の項目に移しました（移行前のデータは設定画面から保存できます）");
+}).catch(function(){render()});
 })();
 </script>
 </body>
