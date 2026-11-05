@@ -307,8 +307,9 @@
         <button class="btn" data-svc="pixai">PixAI</button>
       </span>
       <span class="grow"></span>
-      <span class="hint">長押し（PCはドラッグ）でチップを移動</span>
+      <button class="btn mini danger" id="allClear" title="組み立て中のシチュエーションとキャラをすべて外します（一覧の登録内容は消えません）">シチュエーションとキャラを一括削除</button>
     </div>
+    <p class="hint" style="margin:-4px 0 10px">長押し（PCはドラッグ）でチップを移動できます</p>
 
     <div class="blk">
       <div class="bhead">
@@ -1543,6 +1544,17 @@ $("#wRevert").addEventListener("click",function(){
 $("#wClear").addEventListener("click",function(){
   if(workDirty()&&!confirmDiscard("組み立て中のシチュエーション"))return;
   S.comp.work=emptyWork();S.comp.tgt="base";changed();
+});
+// 一括削除：組み立て中のシチュエーションとキャラ枠をまとめて外す（一覧の登録内容は消えない）。警告は1回だけ
+$("#allClear").addEventListener("click",function(){
+  var w=W(),chs=S.comp.chars.filter(Boolean);
+  var hasSit=!!(w.from||w.base.length||w.neg.length||w.free.trim()||w.slots.some(function(a){return a.length}));
+  if(!hasSit&&!S.comp.chars.length){toast("外すものがありません");return}
+  var unsaved=(workDirty()?1:0)+chs.filter(charDirty).length;
+  if(!confirm("組み立て中のシチュエーションとキャラ（"+S.comp.chars.length+" 枠）をすべて外します。\n"+
+    (unsaved?"保存していない変更も破棄されます。\n":"")+"一覧に登録した内容は消えません。よろしいですか？"))return;
+  S.comp.work=emptyWork();S.comp.chars=[];S.comp.slot=0;S.comp.tgt="base";
+  changed();toast("シチュエーションとキャラをすべて外しました");
 });
 $("#free").addEventListener("input",function(){W().free=this.value;updateOut();save()});
 $("#noOutfit").addEventListener("change",function(){W().noOutfit=this.checked;updateOut();save()});
