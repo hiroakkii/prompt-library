@@ -99,7 +99,7 @@
   .fsum .fv,.tgtbar .fv{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--ink)}
   .tgtbar{display:flex; background:var(--pos-bg); border:1px solid var(--pos-line); color:var(--ink2)}
   .tgtbar .fl{color:var(--pos-dk); font-weight:700}
-  .selbar{display:none; background:var(--ink); color:#fff; border:0}
+  .selbar{display:none; background:var(--ink); color:#fff; border:0; flex-wrap:wrap; row-gap:6px}
   .selbar.on{display:flex}
   .selbar .btn{background:transparent; color:#fff; border-color:rgba(255,255,255,.35)}
   .selbar .btn:hover:not(:disabled){background:rgba(255,255,255,.12); color:#fff; border-color:#fff}
@@ -132,6 +132,7 @@
   .star{color:#B7C1CF; font-size:15px}
   .star.on{color:var(--fav)}
   .uses{font-size:12px; color:var(--ink3); font-variant-numeric:tabular-nums; min-width:22px; text-align:right}
+  .emptyActs{display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin-top:14px}
   .empty{color:var(--ink3); text-align:center; padding:56px 20px; font-size:14px; line-height:2}
   .kb{font-size:11px; font-weight:700; padding:0 7px; border-radius:5px; line-height:19px; flex:none; color:#fff}
   .kb.sit{background:var(--sit)} .kb.char{background:var(--char)}
@@ -239,6 +240,18 @@
   .fr{display:flex; gap:12px}
   .fr>*{flex:1; min-width:0}
   .acts{display:flex; gap:8px; justify-content:flex-end; margin-top:18px}
+  .eslot{border:1px solid var(--rule); border-radius:var(--r); padding:8px; margin-bottom:8px; background:var(--wash)}
+  .eslotHead{display:flex; align-items:center; gap:8px; margin-bottom:6px}
+  .eslotHead .sn{font-size:13px; font-weight:700; color:var(--char)}
+  .eslotHead select.fld{width:auto; padding:4px 8px; font-size:13px}
+  .eslot textarea.fld{min-height:56px; font-family:var(--mono); font-size:13px; resize:vertical}
+  .slotSit{border-top:1px dashed var(--rule2); margin-top:4px; padding-top:10px}
+  .slotSit select.fld{width:auto; padding:4px 8px; font-size:13px}
+  .outWarn{display:flex; gap:8px; align-items:flex-start; margin:0 0 12px; padding:9px 12px; border-radius:var(--r);
+           background:var(--char-bg); border:1px solid #E3B566; color:#6B4300; font-size:13px; line-height:1.6}
+  .outWarn b{font-weight:700}
+  .zone.zwarn .out{border-color:#E3B566; background:#FFFBF2}
+  .warnb{font-size:11px; font-weight:700; padding:1px 8px; border-radius:999px; background:#F6D9A6; color:#6B4300; white-space:nowrap}
   .convNote{display:none; margin:-4px 0 13px; padding:8px 11px; border-radius:var(--r); font-size:13px; line-height:1.6;
             background:var(--char-bg); border:1px solid #EBC98E; color:#6B4300}
   .convNote.on{display:block}
@@ -458,6 +471,11 @@
     <div class="f"><label>ベース（ポジティブ）</label><textarea class="fld" id="eBase" placeholder="masterpiece, beach, sunset&#10;A quiet beach at sunset, warm rim light."></textarea></div>
     <div class="f"><label style="color:var(--neg)">ネガティブ</label><textarea class="fld" id="eNeg" placeholder="lowres, bad anatomy"></textarea></div>
     <div class="f"><label><input type="checkbox" id="eNoOutfit"> このシチュエーションではキャラの「服装」を使わない</label></div>
+    <div class="f"><label>キャラ枠ごとの状態</label>
+      <div id="eSlots"></div>
+      <button type="button" class="btn mini" id="eAddSlot">＋枠を追加</button>
+      <div class="hint" style="margin-top:6px">キャラそのものではなく、このシチュエーションでの表情・ポーズ・状態・動作タグ（<code>source#hug</code> など）を枠ごとに書きます。あとから枠にキャラを入れると、キャラの外見・服装に足されます。想定の性別は人数タグ（<code>2girls</code> など）に使い、キャラを入れたときはキャラの性別を優先します。</div>
+    </div>
   </div>
   <div id="gChar" style="display:none">
     <div class="f"><label>性別</label><select class="fld" id="eSex" style="width:auto">
@@ -465,7 +483,7 @@
     <div class="f"><label>外見</label><textarea class="fld" id="eLook" placeholder="silver hair, red eyes, long hair"></textarea></div>
     <div class="f"><label>服装</label><textarea class="fld" id="eOutfit" placeholder="school uniform"></textarea></div>
   </div>
-  <p class="hint" id="gHint" style="display:none;margin:-4px 0 11px">1行ごとに、カンマ区切りのタグか文章を書きます。文章は文末を「.」で終えてください。重みは <code>(tag:1.2)</code> で書けます。キャラ枠ごとの追加（動作タグなど）は組み立てタブで編集して上書き保存します。</p>
+  <p class="hint" id="gHint" style="display:none;margin:-4px 0 11px">1行ごとに、カンマ区切りのタグか文章を書きます。文章は文末を「.」で終えてください。重みは <code>(tag:1.2)</code> で書けます。</p>
   <div class="f"><label>タグ（, 区切り・任意）</label><input class="fld" id="eTags" placeholder="自作, 女性"></div>
   <div class="f"><label>メモ（任意）</label><input class="fld" id="eNote"></div>
   <div class="acts">
@@ -476,6 +494,22 @@
   <div class="acts">
     <button class="btn" data-close>キャンセル</button>
     <button class="btn go" id="eSave">保存</button>
+  </div>
+</div></div>
+
+<div class="modal" id="mConv"><div class="card">
+  <h3 id="cvTitle">種別を変換</h3>
+  <div class="fr">
+    <div class="f"><label>変換先の種別</label><select class="fld" id="cvKind">
+      <option value="pos">ポジティブ</option><option value="neg">ネガティブ</option>
+      <option value="sit">シチュエーション</option><option value="char">キャラ</option></select></div>
+    <div class="f" id="cvSexBox"><label>性別</label><select class="fld" id="cvSex">
+      <option value="girl">女性（girl）</option><option value="boy">男性（boy）</option><option value="other">その他</option></select></div>
+  </div>
+  <p class="note" id="cvInfo"></p>
+  <div class="acts">
+    <button class="btn" data-close>キャンセル</button>
+    <button class="btn go" id="cvGo">変換する</button>
   </div>
 </div></div>
 
@@ -731,7 +765,7 @@ function chipsToText(arr){
 function oneLine(arr){return chipsToText(arr).replace(/\n/g," / ")}
 function cloneChips(a){return (a||[]).map(function(c){return {cid:uid(),pid:c.pid,name:c.name,text:c.text,w:c.w,nl:!!c.nl}})}
 function summary(p){
-  if(p.kind==="sit")return oneLine(p.base)+(p.neg.length?"  ／ ネガ: "+oneLine(p.neg):"");
+  if(p.kind==="sit")return oneLine(p.base)+(p.neg.length?"  ／ ネガ: "+oneLine(p.neg):"")+(slotCount(p)?"  ／ キャラ枠 "+slotCount(p):"");
   if(p.kind==="char")return oneLine(p.look)+(p.outfit.length?"  ／ 服装: "+oneLine(p.outfit):"");
   return p.text;
 }
@@ -750,6 +784,18 @@ function normChip(c){
   return {cid:validId(c.cid)?c.cid:uid(),pid:validId(c.pid)?c.pid:null,name:str(c.name),text:text,w:clampW(c.w==null?1:c.w),nl:!!c.nl};
 }
 function chips(a){return Array.isArray(a)?a.map(normChip).filter(Boolean):[]}
+function sexOrNone(v){return ["girl","boy","other"].indexOf(v)>=0?v:""}
+// キャラ枠ごとの状態（slots）と想定の性別（slotSex）を同じ長さにそろえ、末尾の空の枠は除く
+function normSlotPair(slots,sexes){
+  var a=Array.isArray(slots)?slots.slice(0,MAXCH).map(chips):[];
+  var x=Array.isArray(sexes)?sexes.slice(0,MAXCH).map(sexOrNone):[];
+  var n=Math.max(a.length,x.length);
+  while(a.length<n)a.push([]);
+  while(x.length<n)x.push("");
+  while(n&&!a[n-1].length&&!x[n-1]){a.pop();x.pop();n--}
+  return {slots:a,slotSex:x};
+}
+function slotCount(o){return normSlotPair(o.slots,o.slotSex).slots.length}
 function normSlots(a){
   var s=Array.isArray(a)?a.slice(0,MAXCH).map(chips):[];
   while(s.length&&!s[s.length-1].length)s.pop();
@@ -764,8 +810,9 @@ function normPrompt(p,i,seen){
   var o={id:id,kind:kind,cat:str(p.cat).trim(),name:str(p.name).trim(),tags:splitTags(p.tags),note:str(p.note).trim(),
     fav:!!p.fav,uses:Math.max(0,parseInt(p.uses,10)||0),created:isFinite(cr)&&p.created!=null?cr:(i||0)};
   if(kind==="sit"){
-    o.base=chips(p.base);o.neg=chips(p.neg);o.slots=normSlots(p.slots);o.noOutfit=!!p.noOutfit;
-    if(!o.base.length&&!o.neg.length&&!o.name)return null;
+    var sp=normSlotPair(p.slots,p.slotSex);
+    o.base=chips(p.base);o.neg=chips(p.neg);o.slots=sp.slots;o.slotSex=sp.slotSex;o.noOutfit=!!p.noOutfit;
+    if(!o.base.length&&!o.neg.length&&!o.slots.length&&!o.name)return null;
     o.cat=o.cat||CAT_SIT;o.name=o.name||"シチュエーション";
   }else if(kind==="char"){
     o.sex=sexOf(p.sex);o.look=chips(p.look);o.outfit=chips(p.outfit);
@@ -799,11 +846,11 @@ function normCfg(c){
   if([", ",",",",\n"].indexOf(c.sep)>=0)d.sep=c.sep;
   if(c.pxJoin==="comma"||c.pxJoin==="para")d.pxJoin=c.pxJoin;
 }
-function emptyWork(){return {from:null,name:"",base:[],neg:[],free:"",slots:[],noOutfit:false}}
+function emptyWork(){return {from:null,name:"",base:[],neg:[],free:"",slots:[],slotSex:[],noOutfit:false}}
 function normWork(w){
   w=w&&typeof w==="object"?w:{};
   return {from:validId(w.from)?w.from:null,name:str(w.name),base:chips(w.base),neg:chips(w.neg),free:str(w.free),
-    slots:normSlots(w.slots),noOutfit:!!w.noOutfit};
+    slots:normSlotPair(w.slots,w.slotSex).slots,slotSex:normSlotPair(w.slots,w.slotSex).slotSex,noOutfit:!!w.noOutfit};
 }
 function normCharW(c){
   if(!c||typeof c!=="object")return null;
@@ -866,7 +913,7 @@ function upgrade(d){
 /* ---------- 参照 ---------- */
 function byId(id){if(!id)return null;for(var i=0;i<S.prompts.length;i++)if(S.prompts[i].id===id)return S.prompts[i];return null}
 function workFrom(p){return {from:p.id,name:p.name,base:cloneChips(p.base),neg:cloneChips(p.neg),free:"",
-  slots:(p.slots||[]).map(cloneChips),noOutfit:!!p.noOutfit}}
+  slots:(p.slots||[]).map(cloneChips),slotSex:(p.slotSex||[]).slice(),noOutfit:!!p.noOutfit}}
 function charFrom(p){return {from:p.id,name:p.name,sex:p.sex,look:cloneChips(p.look),outfit:cloneChips(p.outfit)}}
 function W(){return S.comp.work}
 function maxCh(){return S.comp.svc==="pixai"?PIXAI_MAX:MAXCH}
@@ -876,7 +923,7 @@ function curChar(){
   if(S.comp.slot<0)S.comp.slot=0;
   return S.comp.chars[S.comp.slot];
 }
-function slotArr(i){var w=W();while(w.slots.length<=i)w.slots.push([]);return w.slots[i]}
+function slotArr(i){var w=W();while(w.slots.length<=i)w.slots.push([]);while(w.slotSex.length<w.slots.length)w.slotSex.push("");return w.slots[i]}
 function zoneArr(k){
   if(k==="base")return W().base;
   if(k==="neg")return W().neg;
@@ -892,7 +939,7 @@ function workName(){var w=W();return w.name?"「"+w.name+"」":"（未保存の�
 function tgtLabel(){
   var k=tgtKey(),c=curChar();
   if(k==="base")return workName()+"のベース";
-  if(k==="slot")return workName()+"でのキャラ"+(S.comp.slot+1)+"への追加";
+  if(k==="slot")return workName()+"でのキャラ"+(S.comp.slot+1)+"の状態";
   return "キャラ「"+c.name+"」の"+(k==="look"?"外見":"服装");
 }
 function eachChip(fn){
@@ -908,11 +955,12 @@ function eachChip(fn){
 function sig(a){return JSON.stringify((a||[]).map(function(c){return [c.text,c.w,!!c.nl]}))}
 function slotsSig(s){var t=normSlotsSig(s);return JSON.stringify(t)}
 function normSlotsSig(s){var a=(s||[]).map(sig);while(a.length&&a[a.length-1]==="[]")a.pop();return a}
-function sitSig(o){return [sig(o.base),sig(o.neg),slotsSig(o.slots),!!o.noOutfit,str(o.free).trim()].join("|")}
+function pairSig(o){var sp=normSlotPair(o.slots,o.slotSex);return JSON.stringify([sp.slots.map(sig),sp.slotSex])}
+function sitSig(o){return [sig(o.base),sig(o.neg),pairSig(o),!!o.noOutfit,str(o.free).trim()].join("|")}
 function charSig(o){return [o.sex,sig(o.look),sig(o.outfit)].join("|")}
 function workDirty(){
   var w=W(),p=byId(w.from);
-  if(!p||p.kind!=="sit")return !!(w.base.length||w.neg.length||w.free.trim()||w.slots.some(function(a){return a.length}));
+  if(!p||p.kind!=="sit")return !!(w.base.length||w.neg.length||w.free.trim()||slotCount(w));
   return sitSig(w)!==sitSig(p);
 }
 function charDirty(c){
@@ -994,39 +1042,49 @@ function countTag(chars){
 }
 function compose(){
   var svc=S.comp.svc,fmt=svc==="pixai"?"paren":S.cfg.naiFmt,w=W();
+  // キャラが入っている枠に加えて、未選択でも状態か想定の性別がある枠を出力する
   var cs=[];
-  S.comp.chars.forEach(function(c,i){if(c&&i<maxCh())cs.push({c:c,i:i})});
-  var auto=S.cfg.auto&&cs.length>0,ct=auto?countTag(cs.map(function(x){return x.c})):"";
+  S.comp.chars.forEach(function(c,i){
+    if(i>=maxCh())return;
+    var sx=c?c.sex:(w.slotSex[i]||""),st=w.slots[i]||[];
+    if(c||st.length||sx)cs.push({c:c,i:i,sex:sx});
+  });
+  // キャラが未選択のまま、状態だけで出力する枠の番号
+  var unsel=cs.filter(function(x){return !x.c}).map(function(x){return x.i+1});
+  var auto=S.cfg.auto&&cs.length>0,ct=auto?countTag(cs):"";
   var drop=auto&&ct?isCountTag:null;
   var base=[];
   if(ct)base.push({text:ct,w:1,keep:true});
   base=base.concat(w.base);
   if(w.free&&w.free.trim())base.push({text:w.free.trim(),w:1});
-  var charItems=function(c,i){
-    var it=[];
-    if(svc==="nai"&&S.cfg.auto&&c.sex!=="other")it.push({text:c.sex,w:1,keep:true});
-    it=it.concat(c.look);
-    if(!w.noOutfit)it=it.concat(c.outfit);
-    return it.concat(w.slots[i]||[]);
+  var charItems=function(x){
+    var it=[],c=x.c;
+    if(svc==="nai"&&S.cfg.auto&&x.sex&&x.sex!=="other")it.push({text:x.sex,w:1,keep:true});
+    if(c){
+      it=it.concat(c.look);
+      if(!w.noOutfit)it=it.concat(c.outfit);
+    }
+    return it.concat(w.slots[x.i]||[]);
   };
+  var charLabel=function(x){return "キャラ"+(x.i+1)+(x.c?"："+x.c.name:"（未選択）")};
   var boxes=[];
   if(svc==="nai"){
     boxes.push({label:"ベースプロンプト",a:assemble(base,fmt,{drop:drop})});
-    cs.forEach(function(x,n){boxes.push({label:"キャラ"+(n+1)+"："+x.c.name,a:assemble(charItems(x.c,x.i),fmt,{drop:drop}),sm:true})});
+    cs.forEach(function(x){boxes.push({label:charLabel(x),a:assemble(charItems(x),fmt,{drop:drop}),sm:true,warn:!x.c})});
     boxes.push({label:"除外したい要素（ネガティブ）",a:assemble(w.neg,fmt),neg:true,sm:true});
   }else{
     // ベース → キャラ1 → キャラ2 … の順に1本にする（重複判定は全体で共有）
     var seen={},segs=[assemble(base,fmt,{drop:drop,seen:seen})];
     cs.forEach(function(x){
-      segs.push(assemble(charItems(x.c,x.i).filter(function(t){return !t.keep}),fmt,{drop:drop,seen:seen}));
+      segs.push(assemble(charItems(x).filter(function(t){return !t.keep}),fmt,{drop:drop,seen:seen}));
     });
     segs=segs.filter(function(a){return a.out});
     var jn=S.cfg.pxJoin==="para"?"\n\n":S.cfg.sep;
     boxes.push({label:"プロンプト",a:{out:joinParts(segs.map(function(a){return a.out}),jn),
-      plain:segs.map(function(a){return a.plain}).join(", ")}});
+      plain:segs.map(function(a){return a.plain}).join(", ")},warn:unsel.length>0});
     boxes.push({label:"ネガティブ",a:assemble(w.neg,fmt),neg:true,sm:true});
   }
-  return {svc:svc,boxes:boxes};
+  return {svc:svc,boxes:boxes,unsel:unsel};
 }
 // トークン数の概算（実際のトークナイザーとは多少ずれます）
 function estTokens(s){
@@ -1135,7 +1193,28 @@ function renderSelbar(){
   b.innerHTML='<span>'+n+' 件を選択中</span><span style="flex:1"></span>'+
     '<button class="btn mini" data-s="clear">選択を解除</button>'+
     '<button class="btn mini" data-s="memo">まとめて追加先へ</button>'+
+    '<button class="btn mini" data-s="conv">種別を変換</button>'+
     '<button class="btn mini danger" data-s="del">選択した '+n+' 件を削除</button>';
+}
+// 一覧が空のときの案内。種別「キャラ」「シチュエーション」が1件もないときは、変換の方法を示す
+function emptyHTML(){
+  if(!S.prompts.length)return '<div class="empty">まだ何も入っていません。<br>「取り込み」でExcelを読み込むか、「新規追加」から1件登録してください。</div>';
+  var k=S.f.kind,other=S.f.cats.length||S.f.tags.length||S.f.q.trim(),btn=[];
+  if((k==="char"||k==="sit")&&!S.prompts.some(function(p){return p.kind===k})){
+    var word=k==="char"?"キャラ":"シチュ",kn=KNAME[k];
+    var cats=allCats().filter(function(c){return c.indexOf(word)>=0&&S.prompts.some(function(p){return (p.kind==="pos"||p.kind==="neg")&&p.cat===c})});
+    S.emptyCats=cats;
+    var m='種別が「'+kn+'」の項目はまだありません。<br>'+
+      (cats.length?'カテゴリ「'+cats.map(esc).join("」「")+'」などにポジ・ネガとして登録した項目は、':'ポジ・ネガとして登録した項目は、')+
+      '種別を「'+kn+'」に変換するとここに表示されます。<br>1件ずつなら ✎ から、まとめてなら項目を選んで「種別を変換」から変えられます。';
+    btn.push(cats.length?'<button class="btn" data-e="cats">カテゴリ「'+cats.map(esc).join("」「")+'」の項目を表示</button>':
+      '<button class="btn" data-e="pos">ポジの項目を表示</button>');
+    btn.push('<button class="btn" data-e="new">'+kn+'を新規追加</button>');
+    return '<div class="empty">'+m+'<div class="emptyActs">'+btn.join("")+'</div></div>';
+  }
+  if(other)btn.push('<button class="btn" data-e="clear">検索・カテゴリ・タグの条件を外す</button>');
+  return '<div class="empty">条件に合うプロンプトがありません。検索や絞り込みを外してみてください。'+
+    (btn.length?'<div class="emptyActs">'+btn.join("")+'</div>':'')+'</div>';
 }
 function renderList(){
   var r=filtered(),vis={},k;
@@ -1148,12 +1227,7 @@ function renderList(){
   $("#bDelF").textContent="表示中の "+r.length+" 件を削除";
   $("#fGo").textContent="一覧を見る（"+r.length+"件）";
   updateNav();
-  if(!r.length){
-    $("#rows").innerHTML='<div class="empty">'+(S.prompts.length?
-      "条件に合うプロンプトがありません。検索や絞り込みを外してみてください。":
-      "まだ何も入っていません。<br>「取り込み」でExcelを読み込むか、「新規追加」から1件登録してください。")+'</div>';
-    return;
-  }
+  if(!r.length){$("#rows").innerHTML=emptyHTML();return}
   $("#rows").innerHTML=r.map(function(p){
     var on=!!S.sel[p.id],big=p.kind==="sit"||p.kind==="char";
     return '<div class="row '+p.kind+(on?" sel":"")+'" data-id="'+esc(p.id)+'" tabindex="0">'+
@@ -1192,11 +1266,16 @@ function zoneHTML(k,label,arr,empty){
     '<div class="chips" data-k="'+k+'">'+(arr.length?arr.map(function(c){return chipHTML(c,k)}).join(""):
       '<span class="hint" style="padding:6px">'+esc(empty)+'</span>')+'</div></div>';
 }
+function unselText(a){return a.map(function(n){return "キャラ"+n}).join("・")}
 function updateOut(){
   var o=compose();S.out=o;
   var n=S.comp.chars.filter(Boolean).length;
-  $("#outBox").innerHTML=o.boxes.map(function(b,i){
-    return '<div class="zone"><div class="zhead"><span class="zlab"'+(b.neg?' style="color:var(--neg)"':'')+'>'+esc(b.label)+'</span>'+
+  $("#outBox").innerHTML=(o.unsel.length?'<div class="outWarn" role="status"><span aria-hidden="true">⚠</span><span><b>'+
+      esc(unselText(o.unsel))+'はキャラが未選択です。</b>シチュエーションの状態と想定の性別だけで出力しています'+
+      (S.cfg.auto?'（人数タグも想定の性別から作っています）':'')+'。一覧でキャラをクリックして枠に入れてください。</span></div>':"")+
+    o.boxes.map(function(b,i){
+    return '<div class="zone'+(b.warn?" zwarn":"")+'"><div class="zhead"><span class="zlab"'+(b.neg?' style="color:var(--neg)"':'')+'>'+esc(b.label)+'</span>'+
+      (b.warn?'<span class="warnb">キャラ未選択を含む</span>':'')+
       '<span class="grow"></span><span class="hint">'+esc(hintFor(b.a,o.svc))+'</span>'+
       '<button class="btn mini" data-cp="'+i+'">コピー</button></div>'+
       '<textarea class="out'+(b.sm?" sm":"")+'" readonly>'+esc(b.a.out)+'</textarea></div>';
@@ -1204,6 +1283,19 @@ function updateOut(){
     '<p class="hint" style="margin:0 0 8px">PixAI では全キャラのタグが1本にまとまるため、どのタグがどのキャラに効くかは指定できません。</p>':"");
   var wd=workDirty();
   $("#wDirty").style.display=wd?"":"none";
+}
+var SEXJA={girl:"女性",boy:"男性",other:"その他"};
+function sexOpts(v){
+  return [["","指定なし"],["girl","女性（girl）"],["boy","男性（boy）"],["other","その他"]].map(function(o){
+    return '<option value="'+o[0]+'"'+(o[0]===v?" selected":"")+'>'+o[1]+'</option>'}).join("");
+}
+// 未選択の枠に、シチュエーション側で決めている内容を添える
+function slotNote(i,ch){
+  if(ch)return "";
+  var w=W(),sx=w.slotSex[i]||"",n=(w.slots[i]||[]).length,a=[];
+  if(sx)a.push("想定："+SEXJA[sx]);
+  if(n)a.push("状態 "+n+" 件");
+  return a.length?' <span class="hint">（'+a.join("／")+'）</span>':"";
 }
 function renderComp(){
   if(drag&&drag.active)return;
@@ -1222,7 +1314,8 @@ function renderComp(){
   $("#bAddSlot").disabled=n>=maxCh();
   $("#slots").innerHTML=n?S.comp.chars.map(function(ch,i){
     return '<div class="slot'+(i===S.comp.slot?" on":"")+'" data-i="'+i+'"><span class="sn">キャラ'+(i+1)+'</span>'+
-      '<span class="wname'+(ch?"":" none")+'" style="flex:1">'+(ch?esc(ch.name):"（未選択：一覧でキャラをクリック）")+'</span>'+
+      '<span class="wname'+(ch?"":" none")+'" style="flex:1">'+(ch?esc(ch.name):"（未選択：一覧でキャラをクリック）")+
+        slotNote(i,ch)+'</span>'+
       (charDirty(ch)?'<span class="dirty">未保存の変更</span>':'')+
       (i>0?'<button class="ico" data-up="'+i+'" title="前の枠と入れ替え">↑</button>':'<span style="width:26px;flex:none"></span>')+
       '<button class="ico" data-rmslot="'+i+'" title="この枠を外す（登録したキャラは消えません）">×</button></div>';
@@ -1241,8 +1334,12 @@ function renderComp(){
     }
     $("#charZones").innerHTML=(c?zoneHTML("look","外見",c.look,"髪・目・体型など、どのシチュエーションでも使うタグ")+
       zoneHTML("outfit","服装",c.outfit,"いつもの服装（シチュエーション側で外せます）"):"")+
-      zoneHTML("slot",(w.name?"「"+w.name+"」":"このシチュエーション")+"でのキャラ"+(S.comp.slot+1)+"への追加",slotArr(S.comp.slot),
-        "表情・ポーズ・動作タグ（source#hug など）。キャラを入れ替えても枠に残ります");
+      '<div class="slotSit"><div class="zhead"><span class="zlab">'+esc((w.name?"「"+w.name+"」":"このシチュエーション")+
+        "でのキャラ"+(S.comp.slot+1)+"の想定の性別")+'</span>'+
+        '<select class="fld" data-slotsex="'+S.comp.slot+'">'+sexOpts(w.slotSex[S.comp.slot]||"")+'</select>'+
+        (c&&w.slotSex[S.comp.slot]&&w.slotSex[S.comp.slot]!==c.sex?'<span class="hint">キャラの性別を優先します</span>':'')+'</div>'+
+      zoneHTML("slot",(w.name?"「"+w.name+"」":"このシチュエーション")+"でのキャラ"+(S.comp.slot+1)+"の状態",slotArr(S.comp.slot),
+        "表情・ポーズ・状態・動作タグ（source#hug など）。キャラを入れ替えても枠に残ります")+'</div>';
   }
   updateOut();
   updateNav();
@@ -1251,10 +1348,16 @@ function render(){renderSide();renderList();renderComp()}
 
 /* ---------- 操作：組み立てへの読み込み ---------- */
 function confirmDiscard(what){return confirm(what+"の変更はまだ保存されていません。破棄してよろしいですか？")}
+// シチュエーションに状態を登録してある枠の数だけ、キャラ枠を用意する
+function ensureSlots(){
+  var need=Math.min(slotCount(W()),MAXCH);
+  while(S.comp.chars.length<need)S.comp.chars.push(null);
+}
 function loadSit(p){
   if(workDirty()&&W().from!==p.id&&!confirmDiscard("組み立て中のシチュエーション"))return false;
   if(workDirty()&&W().from===p.id&&!confirmDiscard("「"+p.name+"」"))return false;
   S.comp.work=workFrom(p);S.comp.tgt="base";
+  ensureSlots();
   p.uses=(p.uses||0)+1;
   return true;
 }
@@ -1303,7 +1406,8 @@ function findChip(cid){
 function setEntrySit(p,w){
   var base=w.base.slice();
   if(w.free&&w.free.trim()){base=base.concat(textToChips(w.free));w.base=base;w.free=""}
-  p.base=cloneChips(base);p.neg=cloneChips(w.neg);p.slots=normSlots(w.slots.map(cloneChips));p.noOutfit=!!w.noOutfit;
+  var sp=normSlotPair(w.slots.map(cloneChips),w.slotSex);
+  p.base=cloneChips(base);p.neg=cloneChips(w.neg);p.slots=sp.slots;p.slotSex=sp.slotSex;p.noOutfit=!!w.noOutfit;
   p.text=summary(p);
 }
 function setEntryChar(p,c){
@@ -1313,9 +1417,9 @@ function newEntry(kind,name,src){
   return {id:uid(),kind:kind,cat:src?src.cat:(kind==="sit"?CAT_SIT:CAT_CHAR),name:name,tags:src?src.tags.slice():[],
     note:src?src.note:"",fav:false,uses:0,created:Date.now()};
 }
-function copy(txt){
+function copy(txt,msg){
   if(!txt){toast("コピーするものがありません");return}
-  var ok=function(){toast("コピーしました")};
+  var ok=function(){toast(msg||"コピーしました")};
   if(navigator.clipboard&&navigator.clipboard.writeText){
     navigator.clipboard.writeText(txt).then(ok,function(){fallback(txt,ok)});
   }else fallback(txt,ok);
@@ -1547,6 +1651,7 @@ $("#selbar").addEventListener("click",function(e){
   if(b.dataset.s==="del"){
     if(confirm(ids.length+" 件を削除します。よろしいですか？（直後なら元に戻せます）"))delPrompts(ids);
     return}
+  if(b.dataset.s==="conv"){openConv();return}
   if(b.dataset.s==="memo"){
     for(i=0;i<S.prompts.length;i++){p=S.prompts[i];if(!S.sel[p.id])continue;
       if(p.kind==="sit"||p.kind==="char"){skip++;continue}
@@ -1555,6 +1660,17 @@ $("#selbar").addEventListener("click",function(e){
     toast(n+" 件を "+tgtLabel()+" に追加しました"+(ids.length-n-skip>0?"（入っていた "+(ids.length-n-skip)+" 件は除外）":"")+
       (skip?"。シチュエーション・キャラ "+skip+" 件はまとめて追加できません":""));
   }
+});
+$("#rows").addEventListener("click",function(e){
+  var b=e.target.closest("[data-e]");if(!b)return;
+  var a=b.dataset.e;
+  if(a==="new"){openEdit(null);return}
+  if(a==="cats"){S.f.kind="all";S.f.cats=(S.emptyCats||[]).slice()}
+  if(a==="pos")S.f.kind="pos";
+  S.f.tags=[];S.f.q="";$("#q").value="";
+  if(a!=="clear"&&a!=="cats")S.f.cats=[];
+  if(a==="clear")S.f.cats=[];
+  render();
 });
 $("#tgtbar").addEventListener("click",function(e){if(e.target.closest("[data-go]"))showView(3)});
 $("#bDelF").addEventListener("click",function(){
@@ -1578,7 +1694,7 @@ $("#list").addEventListener("keydown",function(e){
 
 /* ---------- イベント：組み立て ---------- */
 function changed(){renderComp();save()}
-function pickFrom(kind){S.f.kind=kind;S.f.q="";$("#q").value="";render();showView(1)}
+function pickFrom(kind){S.f.kind=kind;S.f.cats=[];S.f.tags=[];S.f.q="";$("#q").value="";render();showView(1)}
 $("#svc").addEventListener("click",function(e){
   var b=e.target.closest("[data-svc]");if(!b)return;
   S.comp.svc=b.dataset.svc;changed();
@@ -1605,7 +1721,7 @@ $("#wSaveAs").addEventListener("click",function(){
 $("#wRevert").addEventListener("click",function(){
   var p=byId(W().from);if(!p||p.kind!=="sit")return;
   if(workDirty()&&!confirmDiscard("「"+p.name+"」"))return;
-  S.comp.work=workFrom(p);changed();toast("登録内容に戻しました");
+  S.comp.work=workFrom(p);ensureSlots();changed();toast("登録内容に戻しました");
 });
 $("#wClear").addEventListener("click",function(){
   if(workDirty()&&!confirmDiscard("組み立て中のシチュエーション"))return;
@@ -1614,7 +1730,7 @@ $("#wClear").addEventListener("click",function(){
 // 一括削除：組み立て中のシチュエーションとキャラ枠をまとめて外す（一覧の登録内容は消えない）。警告は1回だけ
 $("#allClear").addEventListener("click",function(){
   var w=W(),chs=S.comp.chars.filter(Boolean);
-  var hasSit=!!(w.from||w.base.length||w.neg.length||w.free.trim()||w.slots.some(function(a){return a.length}));
+  var hasSit=!!(w.from||w.base.length||w.neg.length||w.free.trim()||slotCount(w));
   if(!hasSit&&!S.comp.chars.length){toast("外すものがありません");return}
   var unsaved=(workDirty()?1:0)+chs.filter(charDirty).length;
   if(!confirm("組み立て中のシチュエーションとキャラ（"+S.comp.chars.length+" 枠）をすべて外します。\n"+
@@ -1639,6 +1755,8 @@ $("#slots").addEventListener("click",function(e){
     i=+b.dataset.rmslot;var c=S.comp.chars[i];
     if(c&&charDirty(c)&&!confirmDiscard("キャラ「"+c.name+"」"))return;
     S.comp.chars.splice(i,1);
+    // 枠を外すと、その枠の状態と想定の性別も外す（以降の枠は1つずつ前に詰める）
+    var w=W();if(w.slots.length>i)w.slots.splice(i,1);if(w.slotSex.length>i)w.slotSex.splice(i,1);
     if(S.comp.slot>=S.comp.chars.length)S.comp.slot=Math.max(0,S.comp.chars.length-1);
     changed();return}
   var row=e.target.closest(".slot");
@@ -1676,7 +1794,8 @@ $("#dock").addEventListener("click",function(e){
   b=e.target.closest("[data-clr]");
   if(b){var arr=zoneArr(b.dataset.clr);if(arr){arr.length=0;changed()}return}
   b=e.target.closest("[data-cp]");
-  if(b){var bx=S.out&&S.out.boxes[+b.dataset.cp];if(bx)copy(bx.a.out);return}
+  if(b){var bx=S.out&&S.out.boxes[+b.dataset.cp];
+    if(bx)copy(bx.a.out,bx.warn?"コピーしました（"+unselText(S.out.unsel)+"はキャラが未選択です）":"");return}
   var act=e.target.closest(".chip [data-a]");if(!act)return;
   var f=findChip(act.closest(".chip").dataset.c);if(!f)return;
   var a=act.dataset.a,st=parseFloat(S.cfg.step);
@@ -1685,12 +1804,17 @@ $("#dock").addEventListener("click",function(e){
   if(a==="dn")f.c.w=Math.max(0.1,Math.round((f.c.w-st)*100)/100);
   changed();
 });
+$("#dock").addEventListener("change",function(e){
+  var sel=e.target.closest("[data-slotsex]");if(!sel)return;
+  var i=+sel.dataset.slotsex;slotArr(i);W().slotSex[i]=sexOrNone(sel.value);changed();
+});
 $("#dlTxt").addEventListener("click",function(){
   var o=compose(),t=o.boxes.filter(function(b){return b.a.out}).map(function(b){return "## "+b.label+"\n"+b.a.out}).join("\n\n");
   if(!t){toast("出力が空です");return}
   var cn=S.comp.chars.filter(Boolean).map(function(c){return c.name});
   var name=(W().name||"組み立て")+(cn.length?"_"+cn.join("+"):"");
-  dl(name+"_"+(o.svc==="pixai"?"PixAI":"NovelAI")+".txt",t+"\n");toast(".txtを保存しました");
+  dl(name+"_"+(o.svc==="pixai"?"PixAI":"NovelAI")+".txt",t+"\n");
+  toast(o.unsel.length?".txtを保存しました（"+unselText(o.unsel)+"はキャラが未選択です）":".txtを保存しました");
 });
 
 /* 並べ替え：マウスはドラッグ、タッチは長押ししてから移動 */
@@ -1791,6 +1915,32 @@ function showKindFields(k){
   $("#gHint").style.display=(k==="sit"||k==="char")?"":"none";
   $("#edTitle").textContent=(S.editing?"編集：":"追加：")+{pos:"プロンプト",neg:"プロンプト",sit:"シチュエーション",char:"キャラ"}[k];
 }
+function eSlotHTML(r,i){
+  return '<div class="eslot" data-i="'+i+'"><div class="eslotHead"><span class="sn">キャラ'+(i+1)+'</span>'+
+    '<span class="hint">想定の性別</span><select class="fld" data-sx>'+sexOpts(r.sex)+'</select>'+
+    '<span class="grow"></span><button type="button" class="ico" data-rm title="この枠を削除">×</button></div>'+
+    '<textarea class="fld" data-tx placeholder="smile, wet hair, source#hug">'+esc(r.text)+'</textarea></div>';
+}
+function readESlots(){
+  return Array.prototype.map.call(document.querySelectorAll("#eSlots .eslot"),function(el){
+    return {sex:el.querySelector("[data-sx]").value,text:el.querySelector("[data-tx]").value};
+  });
+}
+function renderESlots(rows){$("#eSlots").innerHTML=rows.map(eSlotHTML).join("")}
+function eSlotsFrom(p){
+  if(!p||p.kind!=="sit")return [];
+  var sp=normSlotPair(p.slots,p.slotSex);
+  return sp.slots.map(function(a,i){return {sex:sp.slotSex[i],text:chipsToText(a)}});
+}
+$("#eAddSlot").addEventListener("click",function(){
+  var rows=readESlots();if(rows.length>=MAXCH)return;
+  rows.push({sex:"girl",text:""});renderESlots(rows);
+  var t=document.querySelectorAll("#eSlots [data-tx]");t[t.length-1].focus();
+});
+$("#eSlots").addEventListener("click",function(e){
+  var b=e.target.closest("[data-rm]");if(!b)return;
+  var rows=readESlots();rows.splice(+b.closest(".eslot").dataset.i,1);renderESlots(rows);
+});
 function openEdit(p){
   S.editing=p||null;
   var k=p?p.kind:(S.f.kind!=="all"?S.f.kind:"pos");
@@ -1803,6 +1953,7 @@ function openEdit(p){
   $("#eBase").value=p&&p.kind==="sit"?chipsToText(p.base):"";
   $("#eNeg").value=p&&p.kind==="sit"?chipsToText(p.neg):"";
   $("#eNoOutfit").checked=p&&p.kind==="sit"?!!p.noOutfit:false;
+  renderESlots(eSlotsFrom(p));
   $("#eSex").value=p&&p.kind==="char"?p.sex:"girl";
   $("#eLook").value=p&&p.kind==="char"?chipsToText(p.look):"";
   $("#eOutfit").value=p&&p.kind==="char"?chipsToText(p.outfit):"";
@@ -1831,6 +1982,7 @@ function convFill(p,k){
     $("#eBase").value=from==="neg"?"":(from==="sit"?src.main:src.main);
     $("#eNeg").value=from==="neg"?src.main:(from==="sit"?src.neg:"");
     $("#eNoOutfit").checked=from==="sit"?!!p.noOutfit:false;
+    renderESlots(eSlotsFrom(p));
   }else if(k==="char"){
     $("#eLook").value=from==="char"?src.look:src.main;
     $("#eOutfit").value=from==="char"?src.outfit:"";
@@ -1846,7 +1998,7 @@ function convLoss(p,k){
     if(k==="pos"&&p.neg.length)lost.push("ネガティブ");
     if(k==="neg"&&p.base.length)lost.push("ベース");
     if(k==="char"&&p.neg.length)lost.push("ネガティブ");
-    if(normSlots(p.slots).length)lost.push("キャラ枠ごとの追加");
+    if(slotCount(p))lost.push("キャラ枠ごとの状態");
     if(p.noOutfit)lost.push("「服装を使わない」の設定");
   }
   if(p.kind==="char"&&k!=="char"){
@@ -1863,6 +2015,77 @@ function convMsg(p,k){
   if(L.links)m+="\nこの項目を使っているチップ "+L.links+" 個とのつながりが切れます（チップの内容はそのまま残ります）。";
   return m;
 }
+/* まとめて種別を変換（一覧で選んだ項目） */
+function convItems(k){return selIds().map(byId).filter(function(p){return p&&p.kind!==k})}
+var CVDESC={
+  pos:"シチュエーションはベース、キャラは外見と服装をまとめて、本文にします。",
+  neg:"シチュエーションはネガティブ、キャラは外見と服装をまとめて、本文にします。",
+  sit:"ポジはベースに、ネガはネガティブに、キャラは外見と服装をまとめてベースに入ります。",
+  char:"ポジ・ネガの本文と、シチュエーションのベースは外見に入ります。服装は空になるので、必要なら ✎ から分けてください。"
+};
+function renderConv(){
+  var k=$("#cvKind").value,n=selIds().length,items=convItems(k);
+  $("#cvTitle").textContent="選択した "+n+" 件の種別を変換";
+  $("#cvSexBox").style.visibility=k==="char"?"visible":"hidden";
+  $("#cvInfo").textContent=items.length+" 件を「"+KNAME[k]+"」に変換します"+
+    (n>items.length?"（すでに「"+KNAME[k]+"」の "+(n-items.length)+" 件はそのまま）":"")+"。"+CVDESC[k]+
+    " 表示名・カテゴリ・タグ・メモは引き継ぎます（カテゴリが種別の既定のものなら、変換先の既定に変えます）。";
+  $("#cvGo").disabled=!items.length;
+}
+function openConv(){
+  var ks=selIds().map(byId).filter(Boolean).map(function(p){return p.kind});
+  $("#cvKind").value=ks.every(function(x){return x==="char"})?"pos":"char";
+  $("#cvSex").value="girl";
+  renderConv();$("#mConv").classList.add("on");
+}
+$("#cvKind").addEventListener("change",renderConv);
+function chipsOfText(p){return p.nl?[{cid:uid(),pid:null,name:"",text:p.text,w:1,nl:true}]:textToChips(p.text)}
+// 1件の種別を変換する。変換後の内容が空になる場合は変換しない（false）
+function convertEntry(p,k,sex){
+  var from=p.kind,t=function(a){return chipsToText(a||[])},o;
+  if(k==="pos"||k==="neg"){
+    var text=from==="sit"?(k==="neg"?t(p.neg):t(p.base)):(from==="char"?t((p.look||[]).concat(p.outfit||[])):p.text);
+    text=str(text).trim();if(!text)return false;
+    o={text:text,nl:(from==="pos"||from==="neg")?!!p.nl:false};
+  }else if(k==="sit"){
+    o={base:from==="pos"?chipsOfText(p):(from==="char"?cloneChips((p.look||[]).concat(p.outfit||[])):[]),
+       neg:from==="neg"?chipsOfText(p):[],slots:[],slotSex:[],noOutfit:false};
+  }else{
+    o={sex:sex,look:(from==="pos"||from==="neg")?chipsOfText(p):(from==="sit"?cloneChips(p.base):[]),outfit:[]};
+  }
+  ["text","nl","base","neg","slots","slotSex","noOutfit","sex","look","outfit"].forEach(function(f){delete p[f]});
+  for(var x in o)p[x]=o[x];
+  if(!p.cat||p.cat===KDEFCAT[from])p.cat=KDEFCAT[k];
+  p.kind=k;
+  if(isBig(k))p.text=summary(p);
+  return true;
+}
+$("#cvGo").addEventListener("click",function(){
+  var k=$("#cvKind").value,sex=$("#cvSex").value,items=convItems(k);
+  if(!items.length)return;
+  var lostN=0,lostKinds={},links=0,empty=0;
+  items.forEach(function(p){
+    var L=convLoss(p,k);
+    if(L.lost.length){lostN++;L.lost.forEach(function(x){lostKinds[x]=1})}
+    links+=L.links;
+    if((k==="pos"||k==="neg")&&((p.kind==="sit"&&!(k==="neg"?p.neg:p.base).length)||(p.kind==="char"&&!p.look.length&&!p.outfit.length)))empty++;
+  });
+  var warn=[];
+  if(lostN)warn.push(lostN+" 件で、引き継がれない内容があります（"+Object.keys(lostKinds).join("、")+"）。");
+  if(empty)warn.push(empty+" 件は変換後の本文が空になるため、変換しません。");
+  if(links)warn.push("チップ "+links+" 個と元の項目とのつながりが切れます（チップの内容はそのまま残ります）。");
+  if(warn.length&&!confirm(items.length+" 件を「"+KNAME[k]+"」に変換します。\n"+warn.join("\n")+"\nよろしいですか？（直後なら元に戻せます）"))return;
+  var before=items.map(function(p){return JSON.parse(JSON.stringify(p))}),unlinked=[],done=0;
+  var ids={};items.forEach(function(p){if(!isBig(p.kind)&&isBig(k))ids[p.id]=1});
+  eachChip(function(ch){if(ids[ch.pid]){unlinked.push([ch,ch.pid]);ch.pid=null}});
+  items.forEach(function(p){if(convertEntry(p,k,sex))done++});
+  setUndo("種別の変換を取り消しました",function(){
+    items.forEach(function(p,i){for(var x in p)delete p[x];var b=before[i];for(var y in b)p[y]=b[y]});
+    unlinked.forEach(function(u){u[0].pid=u[1]});
+  });
+  syncCats();S.sel={};$("#mConv").classList.remove("on");render();save();
+  toast(done+" 件を「"+KNAME[k]+"」に変換しました"+(items.length>done?"（"+(items.length-done)+" 件は内容が空のため変換せず）":""),"元に戻す");
+});
 $("#eKind").addEventListener("change",function(){
   var k=this.value,p=S.editing;
   if(p&&k!==S.editKind){
@@ -1881,9 +2104,11 @@ $("#eSave").addEventListener("click",function(){
   var common={cat:$("#eCat").value.trim(),name:$("#eName").value.trim(),
     tags:splitTags($("#eTags").value),note:$("#eNote").value.trim()};
   if(k==="sit"){
+    var rows=readESlots(),oldSlots=ed&&ed.kind==="sit"&&ed.slots||[];
+    var sp=normSlotPair(rows.map(function(r,i){return textToChips(r.text,oldSlots[i])}),rows.map(function(r){return r.sex}));
     o={kind:"sit",base:textToChips($("#eBase").value,ed&&ed.base),neg:textToChips($("#eNeg").value,ed&&ed.neg),
-      noOutfit:$("#eNoOutfit").checked,slots:ed&&ed.slots?ed.slots:[]};
-    if(!o.base.length&&!o.neg.length){toast("ベースかネガティブを入力してください");$("#eBase").focus();return}
+      noOutfit:$("#eNoOutfit").checked,slots:sp.slots,slotSex:sp.slotSex};
+    if(!o.base.length&&!o.neg.length&&!o.slots.length){toast("ベース・ネガティブ・キャラ枠ごとの状態のどれかを入力してください");$("#eBase").focus();return}
     common.cat=common.cat||CAT_SIT;
     common.name=common.name||"シチュエーション"+(S.prompts.filter(function(p){return p.kind==="sit"}).length+1);
   }else if(k==="char"){
@@ -1917,7 +2142,7 @@ $("#eSave").addEventListener("click",function(){
         unlinked.forEach(function(ch){ch.pid=eid});
       });
     }
-    ["text","nl","base","neg","slots","noOutfit","sex","look","outfit"].forEach(function(f){delete ed[f]});
+    ["text","nl","base","neg","slots","slotSex","noOutfit","sex","look","outfit"].forEach(function(f){delete ed[f]});
   }
   if(ed){
     // 組み立てに読み込み中で、変更していない場合は登録内容に合わせて読み直す
