@@ -246,6 +246,11 @@
   .eslot textarea.fld{min-height:56px; font-family:var(--mono); font-size:13px; resize:vertical}
   .slotSit{border-top:1px dashed var(--rule2); margin-top:4px; padding-top:10px}
   .slotSit select.fld{width:auto; padding:4px 8px; font-size:13px}
+  .outWarn{display:flex; gap:8px; align-items:flex-start; margin:0 0 12px; padding:9px 12px; border-radius:var(--r);
+           background:var(--char-bg); border:1px solid #E3B566; color:#6B4300; font-size:13px; line-height:1.6}
+  .outWarn b{font-weight:700}
+  .zone.zwarn .out{border-color:#E3B566; background:#FFFBF2}
+  .warnb{font-size:11px; font-weight:700; padding:1px 8px; border-radius:999px; background:#F6D9A6; color:#6B4300; white-space:nowrap}
   .convNote{display:none; margin:-4px 0 13px; padding:8px 11px; border-radius:var(--r); font-size:13px; line-height:1.6;
             background:var(--char-bg); border:1px solid #EBC98E; color:#6B4300}
   .convNote.on{display:block}
@@ -1027,6 +1032,8 @@ function compose(){
     var sx=c?c.sex:(w.slotSex[i]||""),st=w.slots[i]||[];
     if(c||st.length||sx)cs.push({c:c,i:i,sex:sx});
   });
+  // キャラが未選択のまま、状態だけで出力する枠の番号
+  var unsel=cs.filter(function(x){return !x.c}).map(function(x){return x.i+1});
   var auto=S.cfg.auto&&cs.length>0,ct=auto?countTag(cs):"";
   var drop=auto&&ct?isCountTag:null;
   var base=[];
@@ -1046,7 +1053,7 @@ function compose(){
   var boxes=[];
   if(svc==="nai"){
     boxes.push({label:"ベースプロンプト",a:assemble(base,fmt,{drop:drop})});
-    cs.forEach(function(x){boxes.push({label:charLabel(x),a:assemble(charItems(x),fmt,{drop:drop}),sm:true})});
+    cs.forEach(function(x){boxes.push({label:charLabel(x),a:assemble(charItems(x),fmt,{drop:drop}),sm:true,warn:!x.c})});
     boxes.push({label:"除外したい要素（ネガティブ）",a:assemble(w.neg,fmt),neg:true,sm:true});
   }else{
     // ベース → キャラ1 → キャラ2 … の順に1本にする（重複判定は全体で共有）
@@ -1057,10 +1064,10 @@ function compose(){
     segs=segs.filter(function(a){return a.out});
     var jn=S.cfg.pxJoin==="para"?"\n\n":S.cfg.sep;
     boxes.push({label:"プロンプト",a:{out:joinParts(segs.map(function(a){return a.out}),jn),
-      plain:segs.map(function(a){return a.plain}).join(", ")}});
+      plain:segs.map(function(a){return a.plain}).join(", ")},warn:unsel.length>0});
     boxes.push({label:"ネガティブ",a:assemble(w.neg,fmt),neg:true,sm:true});
   }
-  return {svc:svc,boxes:boxes};
+  return {svc:svc,boxes:boxes,unsel:unsel};
 }
 // トークン数の概算（実際のトークナイザーとは多少ずれます）
 function estTokens(s){
@@ -1226,11 +1233,16 @@ function zoneHTML(k,label,arr,empty){
     '<div class="chips" data-k="'+k+'">'+(arr.length?arr.map(function(c){return chipHTML(c,k)}).join(""):
       '<span class="hint" style="padding:6px">'+esc(empty)+'</span>')+'</div></div>';
 }
+function unselText(a){return a.map(function(n){return "キャラ"+n}).join("・")}
 function updateOut(){
   var o=compose();S.out=o;
   var n=S.comp.chars.filter(Boolean).length;
-  $("#outBox").innerHTML=o.boxes.map(function(b,i){
-    return '<div class="zone"><div class="zhead"><span class="zlab"'+(b.neg?' style="color:var(--neg)"':'')+'>'+esc(b.label)+'</span>'+
+  $("#outBox").innerHTML=(o.unsel.length?'<div class="outWarn" role="status"><span aria-hidden="true">⚠</span><span><b>'+
+      esc(unselText(o.unsel))+'はキャラが未選択です。</b>シチュエーションの状態と想定の性別だけで出力しています'+
+      (S.cfg.auto?'（人数タグも想定の性別から作っています）':'')+'。一覧でキャラをクリックして枠に入れてください。</span></div>':"")+
+    o.boxes.map(function(b,i){
+    return '<div class="zone'+(b.warn?" zwarn":"")+'"><div class="zhead"><span class="zlab"'+(b.neg?' style="color:var(--neg)"':'')+'>'+esc(b.label)+'</span>'+
+      (b.warn?'<span class="warnb">キャラ未選択を含む</span>':'')+
       '<span class="grow"></span><span class="hint">'+esc(hintFor(b.a,o.svc))+'</span>'+
       '<button class="btn mini" data-cp="'+i+'">コピー</button></div>'+
       '<textarea class="out'+(b.sm?" sm":"")+'" readonly>'+esc(b.a.out)+'</textarea></div>';
@@ -1372,9 +1384,9 @@ function newEntry(kind,name,src){
   return {id:uid(),kind:kind,cat:src?src.cat:(kind==="sit"?CAT_SIT:CAT_CHAR),name:name,tags:src?src.tags.slice():[],
     note:src?src.note:"",fav:false,uses:0,created:Date.now()};
 }
-function copy(txt){
+function copy(txt,msg){
   if(!txt){toast("コピーするものがありません");return}
-  var ok=function(){toast("コピーしました")};
+  var ok=function(){toast(msg||"コピーしました")};
   if(navigator.clipboard&&navigator.clipboard.writeText){
     navigator.clipboard.writeText(txt).then(ok,function(){fallback(txt,ok)});
   }else fallback(txt,ok);
@@ -1737,7 +1749,8 @@ $("#dock").addEventListener("click",function(e){
   b=e.target.closest("[data-clr]");
   if(b){var arr=zoneArr(b.dataset.clr);if(arr){arr.length=0;changed()}return}
   b=e.target.closest("[data-cp]");
-  if(b){var bx=S.out&&S.out.boxes[+b.dataset.cp];if(bx)copy(bx.a.out);return}
+  if(b){var bx=S.out&&S.out.boxes[+b.dataset.cp];
+    if(bx)copy(bx.a.out,bx.warn?"コピーしました（"+unselText(S.out.unsel)+"はキャラが未選択です）":"");return}
   var act=e.target.closest(".chip [data-a]");if(!act)return;
   var f=findChip(act.closest(".chip").dataset.c);if(!f)return;
   var a=act.dataset.a,st=parseFloat(S.cfg.step);
@@ -1755,7 +1768,8 @@ $("#dlTxt").addEventListener("click",function(){
   if(!t){toast("出力が空です");return}
   var cn=S.comp.chars.filter(Boolean).map(function(c){return c.name});
   var name=(W().name||"組み立て")+(cn.length?"_"+cn.join("+"):"");
-  dl(name+"_"+(o.svc==="pixai"?"PixAI":"NovelAI")+".txt",t+"\n");toast(".txtを保存しました");
+  dl(name+"_"+(o.svc==="pixai"?"PixAI":"NovelAI")+".txt",t+"\n");
+  toast(o.unsel.length?".txtを保存しました（"+unselText(o.unsel)+"はキャラが未選択です）":".txtを保存しました");
 });
 
 /* 並べ替え：マウスはドラッグ、タッチは長押ししてから移動 */
