@@ -99,7 +99,7 @@
   .fsum .fv,.tgtbar .fv{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--ink)}
   .tgtbar{display:flex; background:var(--pos-bg); border:1px solid var(--pos-line); color:var(--ink2)}
   .tgtbar .fl{color:var(--pos-dk); font-weight:700}
-  .selbar{display:none; background:var(--ink); color:#fff; border:0}
+  .selbar{display:none; background:var(--ink); color:#fff; border:0; flex-wrap:wrap; row-gap:6px}
   .selbar.on{display:flex}
   .selbar .btn{background:transparent; color:#fff; border-color:rgba(255,255,255,.35)}
   .selbar .btn:hover:not(:disabled){background:rgba(255,255,255,.12); color:#fff; border-color:#fff}
@@ -132,6 +132,7 @@
   .star{color:#B7C1CF; font-size:15px}
   .star.on{color:var(--fav)}
   .uses{font-size:12px; color:var(--ink3); font-variant-numeric:tabular-nums; min-width:22px; text-align:right}
+  .emptyActs{display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin-top:14px}
   .empty{color:var(--ink3); text-align:center; padding:56px 20px; font-size:14px; line-height:2}
   .kb{font-size:11px; font-weight:700; padding:0 7px; border-radius:5px; line-height:19px; flex:none; color:#fff}
   .kb.sit{background:var(--sit)} .kb.char{background:var(--char)}
@@ -493,6 +494,22 @@
   <div class="acts">
     <button class="btn" data-close>キャンセル</button>
     <button class="btn go" id="eSave">保存</button>
+  </div>
+</div></div>
+
+<div class="modal" id="mConv"><div class="card">
+  <h3 id="cvTitle">種別を変換</h3>
+  <div class="fr">
+    <div class="f"><label>変換先の種別</label><select class="fld" id="cvKind">
+      <option value="pos">ポジティブ</option><option value="neg">ネガティブ</option>
+      <option value="sit">シチュエーション</option><option value="char">キャラ</option></select></div>
+    <div class="f" id="cvSexBox"><label>性別</label><select class="fld" id="cvSex">
+      <option value="girl">女性（girl）</option><option value="boy">男性（boy）</option><option value="other">その他</option></select></div>
+  </div>
+  <p class="note" id="cvInfo"></p>
+  <div class="acts">
+    <button class="btn" data-close>キャンセル</button>
+    <button class="btn go" id="cvGo">変換する</button>
   </div>
 </div></div>
 
@@ -1176,7 +1193,28 @@ function renderSelbar(){
   b.innerHTML='<span>'+n+' 件を選択中</span><span style="flex:1"></span>'+
     '<button class="btn mini" data-s="clear">選択を解除</button>'+
     '<button class="btn mini" data-s="memo">まとめて追加先へ</button>'+
+    '<button class="btn mini" data-s="conv">種別を変換</button>'+
     '<button class="btn mini danger" data-s="del">選択した '+n+' 件を削除</button>';
+}
+// 一覧が空のときの案内。種別「キャラ」「シチュエーション」が1件もないときは、変換の方法を示す
+function emptyHTML(){
+  if(!S.prompts.length)return '<div class="empty">まだ何も入っていません。<br>「取り込み」でExcelを読み込むか、「新規追加」から1件登録してください。</div>';
+  var k=S.f.kind,other=S.f.cats.length||S.f.tags.length||S.f.q.trim(),btn=[];
+  if((k==="char"||k==="sit")&&!S.prompts.some(function(p){return p.kind===k})){
+    var word=k==="char"?"キャラ":"シチュ",kn=KNAME[k];
+    var cats=allCats().filter(function(c){return c.indexOf(word)>=0&&S.prompts.some(function(p){return (p.kind==="pos"||p.kind==="neg")&&p.cat===c})});
+    S.emptyCats=cats;
+    var m='種別が「'+kn+'」の項目はまだありません。<br>'+
+      (cats.length?'カテゴリ「'+cats.map(esc).join("」「")+'」などにポジ・ネガとして登録した項目は、':'ポジ・ネガとして登録した項目は、')+
+      '種別を「'+kn+'」に変換するとここに表示されます。<br>1件ずつなら ✎ から、まとめてなら項目を選んで「種別を変換」から変えられます。';
+    btn.push(cats.length?'<button class="btn" data-e="cats">カテゴリ「'+cats.map(esc).join("」「")+'」の項目を表示</button>':
+      '<button class="btn" data-e="pos">ポジの項目を表示</button>');
+    btn.push('<button class="btn" data-e="new">'+kn+'を新規追加</button>');
+    return '<div class="empty">'+m+'<div class="emptyActs">'+btn.join("")+'</div></div>';
+  }
+  if(other)btn.push('<button class="btn" data-e="clear">検索・カテゴリ・タグの条件を外す</button>');
+  return '<div class="empty">条件に合うプロンプトがありません。検索や絞り込みを外してみてください。'+
+    (btn.length?'<div class="emptyActs">'+btn.join("")+'</div>':'')+'</div>';
 }
 function renderList(){
   var r=filtered(),vis={},k;
@@ -1189,12 +1227,7 @@ function renderList(){
   $("#bDelF").textContent="表示中の "+r.length+" 件を削除";
   $("#fGo").textContent="一覧を見る（"+r.length+"件）";
   updateNav();
-  if(!r.length){
-    $("#rows").innerHTML='<div class="empty">'+(S.prompts.length?
-      "条件に合うプロンプトがありません。検索や絞り込みを外してみてください。":
-      "まだ何も入っていません。<br>「取り込み」でExcelを読み込むか、「新規追加」から1件登録してください。")+'</div>';
-    return;
-  }
+  if(!r.length){$("#rows").innerHTML=emptyHTML();return}
   $("#rows").innerHTML=r.map(function(p){
     var on=!!S.sel[p.id],big=p.kind==="sit"||p.kind==="char";
     return '<div class="row '+p.kind+(on?" sel":"")+'" data-id="'+esc(p.id)+'" tabindex="0">'+
@@ -1618,6 +1651,7 @@ $("#selbar").addEventListener("click",function(e){
   if(b.dataset.s==="del"){
     if(confirm(ids.length+" 件を削除します。よろしいですか？（直後なら元に戻せます）"))delPrompts(ids);
     return}
+  if(b.dataset.s==="conv"){openConv();return}
   if(b.dataset.s==="memo"){
     for(i=0;i<S.prompts.length;i++){p=S.prompts[i];if(!S.sel[p.id])continue;
       if(p.kind==="sit"||p.kind==="char"){skip++;continue}
@@ -1626,6 +1660,17 @@ $("#selbar").addEventListener("click",function(e){
     toast(n+" 件を "+tgtLabel()+" に追加しました"+(ids.length-n-skip>0?"（入っていた "+(ids.length-n-skip)+" 件は除外）":"")+
       (skip?"。シチュエーション・キャラ "+skip+" 件はまとめて追加できません":""));
   }
+});
+$("#rows").addEventListener("click",function(e){
+  var b=e.target.closest("[data-e]");if(!b)return;
+  var a=b.dataset.e;
+  if(a==="new"){openEdit(null);return}
+  if(a==="cats"){S.f.kind="all";S.f.cats=(S.emptyCats||[]).slice()}
+  if(a==="pos")S.f.kind="pos";
+  S.f.tags=[];S.f.q="";$("#q").value="";
+  if(a!=="clear"&&a!=="cats")S.f.cats=[];
+  if(a==="clear")S.f.cats=[];
+  render();
 });
 $("#tgtbar").addEventListener("click",function(e){if(e.target.closest("[data-go]"))showView(3)});
 $("#bDelF").addEventListener("click",function(){
@@ -1649,7 +1694,7 @@ $("#list").addEventListener("keydown",function(e){
 
 /* ---------- イベント：組み立て ---------- */
 function changed(){renderComp();save()}
-function pickFrom(kind){S.f.kind=kind;S.f.q="";$("#q").value="";render();showView(1)}
+function pickFrom(kind){S.f.kind=kind;S.f.cats=[];S.f.tags=[];S.f.q="";$("#q").value="";render();showView(1)}
 $("#svc").addEventListener("click",function(e){
   var b=e.target.closest("[data-svc]");if(!b)return;
   S.comp.svc=b.dataset.svc;changed();
@@ -1970,6 +2015,77 @@ function convMsg(p,k){
   if(L.links)m+="\nこの項目を使っているチップ "+L.links+" 個とのつながりが切れます（チップの内容はそのまま残ります）。";
   return m;
 }
+/* まとめて種別を変換（一覧で選んだ項目） */
+function convItems(k){return selIds().map(byId).filter(function(p){return p&&p.kind!==k})}
+var CVDESC={
+  pos:"シチュエーションはベース、キャラは外見と服装をまとめて、本文にします。",
+  neg:"シチュエーションはネガティブ、キャラは外見と服装をまとめて、本文にします。",
+  sit:"ポジはベースに、ネガはネガティブに、キャラは外見と服装をまとめてベースに入ります。",
+  char:"ポジ・ネガの本文と、シチュエーションのベースは外見に入ります。服装は空になるので、必要なら ✎ から分けてください。"
+};
+function renderConv(){
+  var k=$("#cvKind").value,n=selIds().length,items=convItems(k);
+  $("#cvTitle").textContent="選択した "+n+" 件の種別を変換";
+  $("#cvSexBox").style.visibility=k==="char"?"visible":"hidden";
+  $("#cvInfo").textContent=items.length+" 件を「"+KNAME[k]+"」に変換します"+
+    (n>items.length?"（すでに「"+KNAME[k]+"」の "+(n-items.length)+" 件はそのまま）":"")+"。"+CVDESC[k]+
+    " 表示名・カテゴリ・タグ・メモは引き継ぎます（カテゴリが種別の既定のものなら、変換先の既定に変えます）。";
+  $("#cvGo").disabled=!items.length;
+}
+function openConv(){
+  var ks=selIds().map(byId).filter(Boolean).map(function(p){return p.kind});
+  $("#cvKind").value=ks.every(function(x){return x==="char"})?"pos":"char";
+  $("#cvSex").value="girl";
+  renderConv();$("#mConv").classList.add("on");
+}
+$("#cvKind").addEventListener("change",renderConv);
+function chipsOfText(p){return p.nl?[{cid:uid(),pid:null,name:"",text:p.text,w:1,nl:true}]:textToChips(p.text)}
+// 1件の種別を変換する。変換後の内容が空になる場合は変換しない（false）
+function convertEntry(p,k,sex){
+  var from=p.kind,t=function(a){return chipsToText(a||[])},o;
+  if(k==="pos"||k==="neg"){
+    var text=from==="sit"?(k==="neg"?t(p.neg):t(p.base)):(from==="char"?t((p.look||[]).concat(p.outfit||[])):p.text);
+    text=str(text).trim();if(!text)return false;
+    o={text:text,nl:(from==="pos"||from==="neg")?!!p.nl:false};
+  }else if(k==="sit"){
+    o={base:from==="pos"?chipsOfText(p):(from==="char"?cloneChips((p.look||[]).concat(p.outfit||[])):[]),
+       neg:from==="neg"?chipsOfText(p):[],slots:[],slotSex:[],noOutfit:false};
+  }else{
+    o={sex:sex,look:(from==="pos"||from==="neg")?chipsOfText(p):(from==="sit"?cloneChips(p.base):[]),outfit:[]};
+  }
+  ["text","nl","base","neg","slots","slotSex","noOutfit","sex","look","outfit"].forEach(function(f){delete p[f]});
+  for(var x in o)p[x]=o[x];
+  if(!p.cat||p.cat===KDEFCAT[from])p.cat=KDEFCAT[k];
+  p.kind=k;
+  if(isBig(k))p.text=summary(p);
+  return true;
+}
+$("#cvGo").addEventListener("click",function(){
+  var k=$("#cvKind").value,sex=$("#cvSex").value,items=convItems(k);
+  if(!items.length)return;
+  var lostN=0,lostKinds={},links=0,empty=0;
+  items.forEach(function(p){
+    var L=convLoss(p,k);
+    if(L.lost.length){lostN++;L.lost.forEach(function(x){lostKinds[x]=1})}
+    links+=L.links;
+    if((k==="pos"||k==="neg")&&((p.kind==="sit"&&!(k==="neg"?p.neg:p.base).length)||(p.kind==="char"&&!p.look.length&&!p.outfit.length)))empty++;
+  });
+  var warn=[];
+  if(lostN)warn.push(lostN+" 件で、引き継がれない内容があります（"+Object.keys(lostKinds).join("、")+"）。");
+  if(empty)warn.push(empty+" 件は変換後の本文が空になるため、変換しません。");
+  if(links)warn.push("チップ "+links+" 個と元の項目とのつながりが切れます（チップの内容はそのまま残ります）。");
+  if(warn.length&&!confirm(items.length+" 件を「"+KNAME[k]+"」に変換します。\n"+warn.join("\n")+"\nよろしいですか？（直後なら元に戻せます）"))return;
+  var before=items.map(function(p){return JSON.parse(JSON.stringify(p))}),unlinked=[],done=0;
+  var ids={};items.forEach(function(p){if(!isBig(p.kind)&&isBig(k))ids[p.id]=1});
+  eachChip(function(ch){if(ids[ch.pid]){unlinked.push([ch,ch.pid]);ch.pid=null}});
+  items.forEach(function(p){if(convertEntry(p,k,sex))done++});
+  setUndo("種別の変換を取り消しました",function(){
+    items.forEach(function(p,i){for(var x in p)delete p[x];var b=before[i];for(var y in b)p[y]=b[y]});
+    unlinked.forEach(function(u){u[0].pid=u[1]});
+  });
+  syncCats();S.sel={};$("#mConv").classList.remove("on");render();save();
+  toast(done+" 件を「"+KNAME[k]+"」に変換しました"+(items.length>done?"（"+(items.length-done)+" 件は内容が空のため変換せず）":""),"元に戻す");
+});
 $("#eKind").addEventListener("change",function(){
   var k=this.value,p=S.editing;
   if(p&&k!==S.editKind){
