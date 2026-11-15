@@ -237,6 +237,7 @@
   .f{margin-bottom:13px}
   .f label{display:block; font-size:13px; font-weight:500; color:var(--ink2); margin-bottom:5px}
   .f textarea{min-height:80px; resize:vertical; font-family:var(--mono); font-size:13px}
+  .f textarea.noteArea{font-family:var(--sans); font-size:14px; line-height:1.6; min-height:120px; max-height:40vh; overflow-y:auto}
   .fr{display:flex; gap:12px}
   .fr>*{flex:1; min-width:0}
   .acts{display:flex; gap:8px; justify-content:flex-end; margin-top:18px}
@@ -530,7 +531,7 @@
   </div>
   <p class="hint" id="gHint" style="display:none;margin:-4px 0 11px">1行ごとに、カンマ区切りのタグか文章を書きます。文章は文末を「.」で終えてください。重みは <code>(tag:1.2)</code> で書けます。</p>
   <div class="f"><label>タグ（, 区切り・任意）</label><input class="fld" id="eTags" placeholder="自作, 女性"></div>
-  <div class="f"><label>メモ（任意）</label><input class="fld" id="eNote"></div>
+  <div class="f"><label>メモ（任意）</label><textarea class="fld noteArea" id="eNote" rows="5" placeholder="使い方や注意点など（改行できます）"></textarea></div>
   <div class="acts">
     <button class="btn" data-close>キャンセル</button>
     <button class="btn go" id="eSave">保存</button>
