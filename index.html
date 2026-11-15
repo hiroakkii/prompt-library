@@ -240,6 +240,24 @@
   .fr{display:flex; gap:12px}
   .fr>*{flex:1; min-width:0}
   .acts{display:flex; gap:8px; justify-content:flex-end; margin-top:18px}
+  .card.wide{width:min(780px,100%)}
+  .card.wide .acts{position:sticky; bottom:-18px; background:var(--sheet); padding:12px 0 2px; margin-bottom:-2px; border-top:1px solid var(--rule)}
+  .impTools{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:8px}
+  .impTools .fld{flex:1; min-width:160px; width:auto}
+  .impList{max-height:46vh; overflow-y:auto; border:1px solid var(--rule); border-radius:10px; background:var(--sheet)}
+  .impRow{display:flex; align-items:center; gap:10px; padding:8px 12px; border-top:1px solid var(--rule); cursor:pointer;
+          box-shadow:inset 4px 0 0 var(--k,var(--pos))}
+  .impRow:first-child{border-top:0}
+  .impRow:hover{background:var(--wash)}
+  .impRow.pos{--k:var(--pos)} .impRow.neg{--k:var(--neg)} .impRow.sit{--k:var(--sit)} .impRow.char{--k:var(--char)}
+  .impRow.off{opacity:.6}
+  .impRow input{width:17px; height:17px; flex:none; accent-color:var(--pos)}
+  .impRow .im{min-width:0; flex:1}
+  .impRow .in{font-size:14px; font-weight:500; display:flex; align-items:center; gap:6px}
+  .impRow .it{font-family:var(--mono); font-size:12px; color:var(--ink2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .impRow .ic{font-size:12px; color:var(--ink3); white-space:nowrap; max-width:10em; overflow:hidden; text-overflow:ellipsis}
+  .kb.pos{background:var(--pos)} .kb.neg{background:var(--neg)}
+  .dupb{font-size:11px; padding:0 7px; border-radius:999px; background:var(--wash2); color:var(--ink2); border:1px solid var(--rule2); line-height:17px}
   .eslot{border:1px solid var(--rule); border-radius:var(--r); padding:8px; margin-bottom:8px; background:var(--wash)}
   .eslotHead{display:flex; align-items:center; gap:8px; margin-bottom:6px}
   .eslotHead .sn{font-size:13px; font-weight:700; color:var(--char)}
@@ -295,6 +313,12 @@
     .toast{bottom:calc(var(--tabh) + 16px + env(safe-area-inset-bottom))}
     .fr{flex-direction:column; gap:0}
     .card{padding:18px 16px 16px}
+    .impList{max-height:34vh}
+    .card.wide .acts{flex-wrap:wrap; gap:6px}
+    .card.wide .acts .btn{flex:1 1 auto; padding:8px 8px}
+    .card.wide .acts .go{flex-basis:100%; order:-1}
+    .impRow .ic{display:none}
+    .impRow{padding:7px 10px}
   }
   /* PC：左に一覧、右に組み立てを常に並べる */
   @media (min-width:1100px){
@@ -515,14 +539,27 @@
   </div>
 </div></div>
 
-<div class="modal" id="mImp"><div class="card">
-  <h3>取り込み方法</h3>
-  <p style="color:var(--tx2);font-size:13px;margin:0 0 6px" id="impInfo"></p>
-  <p class="note" style="margin:0 0 4px">「追加」では、既存と同じ内容の行（ポジ・ネガは本文、シチュエーション・キャラは名前と内容が同じもの）は飛ばします。「全置換」は直後なら元に戻せます（設定画面からも復元できます）。</p>
+<div class="modal" id="mImp"><div class="card wide">
+  <h3>取り込む項目を選ぶ</h3>
+  <p class="note" id="impInfo"></p>
+  <div class="impTools">
+    <span class="seg" id="impKind" style="margin-left:0">
+      <button class="btn on" data-ik="all">すべて</button><button class="btn" data-ik="pos">ポジ</button><button class="btn" data-ik="neg">ネガ</button><button class="btn" data-ik="sit">シチュ</button><button class="btn" data-ik="char">キャラ</button>
+    </span>
+    <input class="fld" id="impQ" placeholder="表示名・カテゴリ・内容で検索">
+  </div>
+  <div class="impTools">
+    <button class="btn mini" id="impAll">表示中をすべて選ぶ</button>
+    <button class="btn mini" id="impNone">表示中の選択を外す</button>
+    <span class="grow"></span>
+    <span class="hint" id="impCount"></span>
+  </div>
+  <div class="impList" id="impList"></div>
+  <p class="note" style="margin:10px 0 0">「登録済み」は、いま登録されている項目（またはこのファイル内の前の項目）と同じ内容です。最初は選ばれていません。選んで追加すると重複して登録されます。「全置換」は、選んだ項目だけでいまのデータを置き換えます（直後なら元に戻せます。設定画面からも復元できます）。</p>
   <div class="acts">
     <button class="btn" data-close>キャンセル</button>
-    <button class="btn danger" id="impRep">全置換</button>
-    <button class="btn go" id="impAdd">追加する</button>
+    <button class="btn danger" id="impRep">選んだ項目で全置換</button>
+    <button class="btn go" id="impAdd">選んだ項目を追加</button>
   </div>
 </div></div>
 
@@ -1530,7 +1567,59 @@ function toPrompt(o){
   }else{base.text=str(o.text);base.nl=/文章|自然|natural|prose|sentence/i.test(str(o.nl))}
   return normPrompt(base,0,{});
 }
-function openImport(info){$("#impInfo").textContent=info;$("#mImp").classList.add("on")}
+// 取り込みの確認：読み込んだ項目を一覧にして、取り込むものを選ぶ
+function openImport(info){
+  var p=S.pending,have={};
+  S.prompts.forEach(function(x){have[dupKey(x)]=1});
+  // 登録済み（またはファイル内の前の項目）と同じ内容なら「登録済み」にして、最初は選ばない
+  p.dup=p.rows.map(function(r){var k=dupKey(r),d=!!have[k];have[k]=1;return d});
+  p.sel=p.dup.map(function(d){return !d});
+  p.ik="all";p.iq="";
+  $("#impQ").value="";
+  $("#impInfo").textContent=info;
+  renderImp();
+  $("#mImp").classList.add("on");
+}
+function impVisible(){
+  var p=S.pending,q=p.iq.trim().toLowerCase().split(/\s+/).filter(Boolean),out=[];
+  p.rows.forEach(function(r,i){
+    if(p.ik!=="all"&&r.kind!==p.ik)return;
+    if(q.length){var hay=hayOf(r);for(var j=0;j<q.length;j++)if(hay.indexOf(q[j])<0)return}
+    out.push(i);
+  });
+  return out;
+}
+function renderImp(){
+  var p=S.pending;if(!p)return;
+  var vis=impVisible();
+  document.querySelectorAll("#impKind [data-ik]").forEach(function(b){b.classList.toggle("on",b.dataset.ik===p.ik)});
+  $("#impList").innerHTML=vis.length?vis.map(function(i){
+    var r=p.rows[i];
+    return '<label class="impRow '+r.kind+(p.sel[i]?"":" off")+'"><input type="checkbox" data-ii="'+i+'"'+(p.sel[i]?" checked":"")+'>'+
+      '<span class="im"><span class="in"><span class="kb '+r.kind+'">'+KLAB[r.kind]+'</span>'+esc(r.name)+
+      (r.nl?' <span class="nlb">文章</span>':'')+(p.dup[i]?' <span class="dupb">登録済み</span>':'')+'</span>'+
+      '<span class="it">'+esc(r.text)+'</span></span><span class="ic">'+esc(r.cat)+'</span></label>';
+  }).join(""):'<div class="empty" style="padding:28px 12px">条件に合う項目がありません。</div>';
+  updateImpCount();
+}
+function updateImpCount(){
+  var p=S.pending,n=p.sel.filter(Boolean).length;
+  $("#impCount").textContent=p.rows.length+" 件中 "+n+" 件を選択";
+  $("#impAdd").textContent="選んだ "+n+" 件を追加";
+  $("#impAdd").disabled=!n;$("#impRep").disabled=!n;
+}
+$("#impList").addEventListener("change",function(e){
+  var c=e.target.closest("[data-ii]");if(!c)return;
+  S.pending.sel[+c.dataset.ii]=c.checked;
+  c.closest(".impRow").classList.toggle("off",!c.checked);
+  updateImpCount();
+});
+$("#impKind").addEventListener("click",function(e){
+  var b=e.target.closest("[data-ik]");if(!b)return;S.pending.ik=b.dataset.ik;renderImp();
+});
+$("#impQ").addEventListener("input",function(){S.pending.iq=this.value;renderImp()});
+$("#impAll").addEventListener("click",function(){impVisible().forEach(function(i){S.pending.sel[i]=true});renderImp()});
+$("#impNone").addEventListener("click",function(){impVisible().forEach(function(i){S.pending.sel[i]=false});renderImp()});
 function readFile(f){
   var r=new FileReader();
   if(/\.json$/i.test(f.name)){
@@ -1578,7 +1667,8 @@ function restoreSnap(s){
 function dupKey(p){return p.kind+"\u0000"+(p.kind==="sit"||p.kind==="char"?p.name+"\u0000":"")+p.text}
 function applyImport(replace){
   var p=S.pending;if(!p)return;
-  var rows=p.rows;
+  var rows=p.rows.filter(function(r,i){return p.sel[i]});
+  if(!rows.length){toast("取り込む項目を選んでください");return}
   if(replace){
     var snap=snapshot();
     S.bak={at:Date.now(),data:snap};
@@ -1592,11 +1682,16 @@ function applyImport(replace){
     setUndo("全置換を取り消しました",function(){restoreSnap(snap)});
     toast(S.prompts.length+" 件に置き換えました","元に戻す");
   }else{
-    var have={},i,n=0;
-    for(i=0;i<S.prompts.length;i++)have[dupKey(S.prompts[i])]=1;
-    for(i=0;i<rows.length;i++)if(!have[dupKey(rows[i])]){
-      rows[i].id=uid();S.prompts.push(rows[i]);have[dupKey(rows[i])]=1;n++}
-    toast(n+" 件追加しました（重複 "+(rows.length-n)+" 件は除外）");
+    // 選んだ項目はすべて追加する（登録済みでも、選んだ場合は重複して登録する）
+    // 新しいIDを振り、ファイル内のシチュエーション・キャラのチップが指す元の項目も付け替える
+    var map={},nd=0;
+    rows.forEach(function(r){if(p.dup[p.rows.indexOf(r)])nd++;var old=r.id;r.id=uid();map[old]=r.id;S.prompts.push(r)});
+    rows.forEach(function(r){
+      var fix=function(a){(a||[]).forEach(function(c){if(c.pid)c.pid=map[c.pid]||(byId(c.pid)?c.pid:null)})};
+      if(r.kind==="sit"){fix(r.base);fix(r.neg);(r.slots||[]).forEach(fix)}
+      if(r.kind==="char"){fix(r.look);fix(r.outfit)}
+    });
+    toast(rows.length+" 件追加しました"+(nd?"（うち登録済みと同じ内容 "+nd+" 件）":""));
   }
   syncCats();
   S.pending=null;$("#mImp").classList.remove("on");render();save();
@@ -2192,7 +2287,11 @@ $("#eSave").addEventListener("click",function(){
     var cClean=[];if(k==="char")S.comp.chars.forEach(function(ch,j){if(ch&&ch.from===ed.id&&!charDirty(ch))cClean.push(j)});
     for(var key in o)ed[key]=o[key];
     if(ed.kind==="sit"||ed.kind==="char")ed.text=summary(ed);
-    else eachChip(function(ch){if(ch.pid===ed.id){ch.name=ed.name;ch.text=ed.text;ch.nl=ed.nl}});
+    else{
+      eachChip(function(ch){if(ch.pid===ed.id){ch.name=ed.name;ch.text=ed.text;ch.nl=ed.nl}});
+      // チップの中身が変わったシチュエーション・キャラの一覧表示（要約）も更新する
+      S.prompts.forEach(function(q){if(isBig(q.kind))q.text=summary(q)});
+    }
     if(wClean)S.comp.work=workFrom(ed);
     else if(ed.kind==="sit"&&W().from===ed.id)W().name=ed.name;
     S.comp.chars.forEach(function(ch,j){if(ch&&ch.from===ed.id){if(cClean.indexOf(j)>=0)S.comp.chars[j]=charFrom(ed);else ch.name=ed.name}});
@@ -2226,7 +2325,10 @@ $("#bImp").addEventListener("click",function(){$("#file").click();needXLSX().cat
 $("#file").addEventListener("change",function(){if(this.files[0])readFile(this.files[0]);this.value=""});
 $("#impAdd").addEventListener("click",function(){applyImport(false)});
 $("#impRep").addEventListener("click",function(){
-  if(confirm("いまの "+S.prompts.length+" 件を消して置き換えます。よろしいですか？（直後なら元に戻せます）"))applyImport(true)});
+  var p=S.pending;if(!p)return;
+  var n=p.sel.filter(Boolean).length,rest=p.rows.length-n;
+  if(confirm("いまの "+S.prompts.length+" 件を消して、選んだ "+n+" 件で置き換えます。"+
+    (rest?"\n選ばれていない "+rest+" 件は取り込まれません。":"")+"\nよろしいですか？（直後なら元に戻せます）"))applyImport(true)});
 window.addEventListener("dragover",function(e){e.preventDefault()});
 window.addEventListener("drop",function(e){
   e.preventDefault();
