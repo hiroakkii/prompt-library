@@ -237,6 +237,7 @@
   .f{margin-bottom:13px}
   .f label{display:block; font-size:13px; font-weight:500; color:var(--ink2); margin-bottom:5px}
   .f textarea{min-height:80px; resize:vertical; font-family:var(--mono); font-size:13px}
+  .f textarea.noteArea{font-family:var(--sans); font-size:14px; line-height:1.6; min-height:120px; max-height:40vh; overflow-y:auto}
   .fr{display:flex; gap:12px}
   .fr>*{flex:1; min-width:0}
   .acts{display:flex; gap:8px; justify-content:flex-end; margin-top:18px}
@@ -257,11 +258,29 @@
   .impRow .it{font-family:var(--mono); font-size:12px; color:var(--ink2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
   .impRow .ic{font-size:12px; color:var(--ink3); white-space:nowrap; max-width:10em; overflow:hidden; text-overflow:ellipsis}
   .kb.pos{background:var(--pos)} .kb.neg{background:var(--neg)}
+  /* フォルダ（連続したシーン） */
+  .row.folder{background:var(--sit-bg)}
+  .row.folder:hover{background:#DDF0EC}
+  .row.folder .rname{font-weight:700}
+  .ftog{width:22px; flex:none; color:var(--sit); font-size:13px; text-align:center}
+  .kb.fold{background:#fff; color:var(--sit); border:1.5px solid var(--sit); line-height:16px}
+  .row.infolder{padding-left:44px; background:#FBFEFD; box-shadow:inset 4px 0 0 var(--sit), inset 26px 0 0 -22px var(--sit)}
+  .row.infolder .rname{font-size:14px}
+  .sn2{font-size:11.5px; color:var(--sit); font-variant-numeric:tabular-nums; min-width:1.6em}
+  .folderBar{display:none; align-items:center; gap:8px; flex-wrap:wrap; margin:-2px 0 12px; padding:7px 10px;
+             background:var(--sit-bg); border:1px solid #B9DED7; border-radius:var(--r); font-size:13px; color:var(--ink2)}
+  .folderBar.on{display:flex}
+  .folderBar b{color:var(--sit); font-weight:700}
+  .sceneMenu{min-width:260px; max-width:min(420px,calc(100vw - 24px)); max-height:60vh; overflow-y:auto}
+  .sceneMenu button.cur{background:var(--sit-bg); color:var(--sit); font-weight:700}
+  .sceneMenu .mh{font-size:12px; color:var(--ink3); padding:4px 10px 6px}
   .dupb{font-size:11px; padding:0 7px; border-radius:999px; background:var(--wash2); color:var(--ink2); border:1px solid var(--rule2); line-height:17px}
   .eslot{border:1px solid var(--rule); border-radius:var(--r); padding:8px; margin-bottom:8px; background:var(--wash)}
   .eslotHead{display:flex; align-items:center; gap:8px; margin-bottom:6px}
   .eslotHead .sn{font-size:13px; font-weight:700; color:var(--char)}
   .eslotHead select.fld{width:auto; padding:4px 8px; font-size:13px}
+  .eslotLine{display:flex; align-items:center; gap:10px; margin:8px 0 4px}
+  .eslot textarea.fld.line{min-height:44px; font-family:var(--sans); font-size:14px}
   .eslot textarea.fld{min-height:56px; font-family:var(--mono); font-size:13px; resize:vertical}
   .lineBox{border-top:1px dashed var(--rule2); margin-top:4px; padding:10px 0 8px}
   .fld.line{font-size:14px; resize:vertical; min-height:56px}
@@ -428,6 +447,7 @@
         <button class="btn mini" id="wRevert">元に戻す</button>
         <button class="btn mini danger" id="wClear">空にする</button>
       </div>
+      <div class="folderBar" id="folderBar"></div>
       <div id="sitZones"></div>
       <div style="margin:-2px 0 8px">
         <input class="fld free" id="free" placeholder="ベースへの追記（ベースの末尾に足されます）" >
@@ -494,13 +514,15 @@
       <div class="hint">オンにすると、カンマで分割せず1つのまとまりとして出力します（重複除去・括弧のエスケープ・人数タグの置き換えの対象外）。</div></div>
   </div>
   <div id="gSit" style="display:none">
+    <div class="f"><label>フォルダ（任意）</label><input class="fld" id="eFolder" list="folderList" placeholder="例：雨の帰り道"><datalist id="folderList"></datalist>
+      <div class="hint" style="margin-top:4px">連続したシーン（開始・継続・終了など）を同じフォルダ名にすると、一覧で1つのフォルダにまとまります。空欄なら今までどおり単独のシチュエーションです。</div></div>
     <div class="f"><label>ベース（ポジティブ）</label><textarea class="fld" id="eBase" placeholder="masterpiece, beach, sunset&#10;A quiet beach at sunset, warm rim light."></textarea></div>
     <div class="f"><label style="color:var(--neg)">ネガティブ</label><textarea class="fld" id="eNeg" placeholder="lowres, bad anatomy"></textarea></div>
     <div class="f"><label><input type="checkbox" id="eNoOutfit"> このシチュエーションではキャラの「服装」を使わない</label></div>
     <div class="f"><label>キャラ枠ごとの状態</label>
       <div id="eSlots"></div>
       <button type="button" class="btn mini" id="eAddSlot">＋枠を追加</button>
-      <div class="hint" style="margin-top:6px">キャラそのものではなく、このシチュエーションでの表情・ポーズ・状態・動作タグ（<code>source#hug</code> など）を枠ごとに書きます。あとから枠にキャラを入れると、キャラの外見・服装に足されます。想定の性別は人数タグ（<code>2girls</code> など）に使い、キャラを入れたときはキャラの性別を優先します。</div>
+      <div class="hint" style="margin-top:6px">キャラそのものではなく、このシチュエーションでの表情・ポーズ・状態・動作タグ（<code>source#hug</code> など）を枠ごとに書きます。あとから枠にキャラを入れると、キャラの外見・服装に足されます。想定の性別は人数タグ（<code>2girls</code> など）に使い、キャラを入れたときはキャラの性別を優先します。セリフは組み立てに読み込んだときに各キャラ枠のセリフ欄に入ります（組み立てタブで書き換えても、ここに登録したセリフは変わりません）。</div>
     </div>
   </div>
   <div id="gChar" style="display:none">
@@ -511,7 +533,7 @@
   </div>
   <p class="hint" id="gHint" style="display:none;margin:-4px 0 11px">1行ごとに、カンマ区切りのタグか文章を書きます。文章は文末を「.」で終えてください。重みは <code>(tag:1.2)</code> で書けます。</p>
   <div class="f"><label>タグ（, 区切り・任意）</label><input class="fld" id="eTags" placeholder="自作, 女性"></div>
-  <div class="f"><label>メモ（任意）</label><input class="fld" id="eNote"></div>
+  <div class="f"><label>メモ（任意）</label><textarea class="fld noteArea" id="eNote" rows="5" placeholder="使い方や注意点など（改行できます）"></textarea></div>
   <div class="acts">
     <button class="btn" data-close>キャンセル</button>
     <button class="btn go" id="eSave">保存</button>
@@ -609,6 +631,7 @@
   <div class="acts"><button class="btn go" data-close>閉じる</button></div>
 </div></div>
 
+<div class="menu sceneMenu" id="sceneMenu"></div>
 <div class="menu" id="expMenu">
   <button data-x="xlsx">Excel (.xlsx) で書き出し</button>
   <button data-x="csv">CSV で書き出し</button>
@@ -722,6 +745,7 @@ var S={
   comp:null,
   cfg:{dup:false,step:0.05,naiFmt:"nai4",sep:", ",dedup:true,escp:true,auto:true,pxJoin:"comma"},
   f:{kind:"all",cats:[],tags:[],tagMode:"and",q:""},
+  openF:{},
   sort:"new", editing:null, pending:null, sel:{}, undo:null, bak:null, mig:null, out:null
 };
 var uid=function(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)};
@@ -804,7 +828,8 @@ function chipsToText(arr){
 function oneLine(arr){return chipsToText(arr).replace(/\n/g," / ")}
 function cloneChips(a){return (a||[]).map(function(c){return {cid:uid(),pid:c.pid,name:c.name,text:c.text,w:c.w,nl:!!c.nl}})}
 function summary(p){
-  if(p.kind==="sit")return oneLine(p.base)+(p.neg.length?"  ／ ネガ: "+oneLine(p.neg):"")+(slotCount(p)?"  ／ キャラ枠 "+slotCount(p):"");
+  if(p.kind==="sit")return oneLine(p.base)+(p.neg.length?"  ／ ネガ: "+oneLine(p.neg):"")+
+    (slotCount(p)?"  ／ キャラ枠 "+slotCount(p)+(lineCountOf(p)?"（セリフ "+lineCountOf(p)+"）":""):"");
   if(p.kind==="char")return oneLine(p.look)+(p.outfit.length?"  ／ 服装: "+oneLine(p.outfit):"");
   return p.text;
 }
@@ -825,16 +850,24 @@ function normChip(c){
 function chips(a){return Array.isArray(a)?a.map(normChip).filter(Boolean):[]}
 function sexOrNone(v){return ["girl","boy","other"].indexOf(v)>=0?v:""}
 // キャラ枠ごとの状態（slots）と想定の性別（slotSex）を同じ長さにそろえ、末尾の空の枠は除く
-function normSlotPair(slots,sexes){
+// キャラ枠ごとの状態（slots）・想定の性別（slotSex）・登録セリフ（slotLines）・吹き出し（slotBubbles）を
+// 同じ長さにそろえ、末尾の空の枠は除く
+function normSlotPair(slots,sexes,lines,bubbles){
   var a=Array.isArray(slots)?slots.slice(0,MAXCH).map(chips):[];
   var x=Array.isArray(sexes)?sexes.slice(0,MAXCH).map(sexOrNone):[];
-  var n=Math.max(a.length,x.length);
+  var l=Array.isArray(lines)?lines.slice(0,MAXCH).map(function(v){return str(v)}):[];
+  var bb=Array.isArray(bubbles)?bubbles.slice(0,MAXCH).map(function(v){return v!==false}):[];
+  var n=Math.max(a.length,x.length,l.length);
   while(a.length<n)a.push([]);
   while(x.length<n)x.push("");
-  while(n&&!a[n-1].length&&!x[n-1]){a.pop();x.pop();n--}
-  return {slots:a,slotSex:x};
+  while(l.length<n)l.push("");
+  while(bb.length<n)bb.push(true);
+  while(n&&!a[n-1].length&&!x[n-1]&&!l[n-1].trim()){a.pop();x.pop();l.pop();n--}
+  return {slots:a,slotSex:x,slotLines:l,slotBubbles:bb.slice(0,n)};
 }
-function slotCount(o){return normSlotPair(o.slots,o.slotSex).slots.length}
+function slotPair(o){return normSlotPair(o.slots,o.slotSex,o.slotLines,o.slotBubbles)}
+function slotCount(o){return slotPair(o).slots.length}
+function lineCountOf(o){return slotPair(o).slotLines.filter(function(v){return v.trim()}).length}
 function normSlots(a){
   var s=Array.isArray(a)?a.slice(0,MAXCH).map(chips):[];
   while(s.length&&!s[s.length-1].length)s.pop();
@@ -849,8 +882,9 @@ function normPrompt(p,i,seen){
   var o={id:id,kind:kind,cat:str(p.cat).trim(),name:str(p.name).trim(),tags:splitTags(p.tags),note:str(p.note).trim(),
     fav:!!p.fav,uses:Math.max(0,parseInt(p.uses,10)||0),created:isFinite(cr)&&p.created!=null?cr:(i||0)};
   if(kind==="sit"){
-    var sp=normSlotPair(p.slots,p.slotSex);
-    o.base=chips(p.base);o.neg=chips(p.neg);o.slots=sp.slots;o.slotSex=sp.slotSex;o.noOutfit=!!p.noOutfit;
+    var sp=slotPair(p);
+    o.base=chips(p.base);o.neg=chips(p.neg);o.slots=sp.slots;o.slotSex=sp.slotSex;o.slotLines=sp.slotLines;o.slotBubbles=sp.slotBubbles;o.noOutfit=!!p.noOutfit;
+    o.folder=str(p.folder).trim().slice(0,80);o.order=isFinite(Number(p.order))?Number(p.order):0;
     if(!o.base.length&&!o.neg.length&&!o.slots.length&&!o.name)return null;
     o.cat=o.cat||CAT_SIT;o.name=o.name||"シチュエーション";
   }else if(kind==="char"){
@@ -885,11 +919,11 @@ function normCfg(c){
   if([", ",",",",\n"].indexOf(c.sep)>=0)d.sep=c.sep;
   if(c.pxJoin==="comma"||c.pxJoin==="para")d.pxJoin=c.pxJoin;
 }
-function emptyWork(){return {from:null,name:"",base:[],neg:[],free:"",slots:[],slotSex:[],noOutfit:false}}
+function emptyWork(){return {from:null,name:"",base:[],neg:[],free:"",slots:[],slotSex:[],slotLines:[],slotBubbles:[],noOutfit:false}}
 function normWork(w){
   w=w&&typeof w==="object"?w:{};
   return {from:validId(w.from)?w.from:null,name:str(w.name),base:chips(w.base),neg:chips(w.neg),free:str(w.free),
-    slots:normSlotPair(w.slots,w.slotSex).slots,slotSex:normSlotPair(w.slots,w.slotSex).slotSex,noOutfit:!!w.noOutfit};
+    slots:slotPair(w).slots,slotSex:slotPair(w).slotSex,slotLines:slotPair(w).slotLines,slotBubbles:slotPair(w).slotBubbles,noOutfit:!!w.noOutfit};
 }
 function normCharW(c){
   if(!c||typeof c!=="object")return null;
@@ -955,7 +989,8 @@ function upgrade(d){
 /* ---------- 参照 ---------- */
 function byId(id){if(!id)return null;for(var i=0;i<S.prompts.length;i++)if(S.prompts[i].id===id)return S.prompts[i];return null}
 function workFrom(p){return {from:p.id,name:p.name,base:cloneChips(p.base),neg:cloneChips(p.neg),free:"",
-  slots:(p.slots||[]).map(cloneChips),slotSex:(p.slotSex||[]).slice(),noOutfit:!!p.noOutfit}}
+  slots:(p.slots||[]).map(cloneChips),slotSex:(p.slotSex||[]).slice(),
+  slotLines:(p.slotLines||[]).slice(),slotBubbles:(p.slotBubbles||[]).slice(),noOutfit:!!p.noOutfit}}
 function charFrom(p){return {from:p.id,name:p.name,sex:p.sex,look:cloneChips(p.look),outfit:cloneChips(p.outfit)}}
 function W(){return S.comp.work}
 function lineOf(i){return str(S.comp.lines[i]).trim()}
@@ -999,7 +1034,7 @@ function eachChip(fn){
 function sig(a){return JSON.stringify((a||[]).map(function(c){return [c.text,c.w,!!c.nl]}))}
 function slotsSig(s){var t=normSlotsSig(s);return JSON.stringify(t)}
 function normSlotsSig(s){var a=(s||[]).map(sig);while(a.length&&a[a.length-1]==="[]")a.pop();return a}
-function pairSig(o){var sp=normSlotPair(o.slots,o.slotSex);return JSON.stringify([sp.slots.map(sig),sp.slotSex])}
+function pairSig(o){var sp=slotPair(o);return JSON.stringify([sp.slots.map(sig),sp.slotSex,sp.slotLines,sp.slotBubbles])}
 function sitSig(o){return [sig(o.base),sig(o.neg),pairSig(o),!!o.noOutfit,str(o.free).trim()].join("|")}
 function charSig(o){return [o.sex,sig(o.look),sig(o.outfit)].join("|")}
 function workDirty(){
@@ -1193,8 +1228,19 @@ function renderSide(){
   $("#stat").textContent=S.prompts.length+" 件登録";
 }
 function hayOf(p){
-  return (p.name+" "+p.text+" "+p.tags.join(" ")+" "+p.note+" "+p.cat).toLowerCase();
+  return (p.name+" "+p.text+" "+p.tags.join(" ")+" "+p.note+" "+p.cat+" "+(p.folder||"")).toLowerCase();
 }
+/* ---------- フォルダ（連続したシーン）---------- */
+function byOrder(a,b){return (a.order||0)-(b.order||0)||a.created-b.created}
+function folderMembers(name){return S.prompts.filter(function(p){return p.kind==="sit"&&p.folder===name}).sort(byOrder)}
+function folderNames(){
+  var seen={},out=[];
+  S.prompts.forEach(function(p){if(p.kind==="sit"&&p.folder&&!seen[p.folder]){seen[p.folder]=1;out.push(p.folder)}});
+  return out.sort(function(a,b){return a.localeCompare(b,"ja")});
+}
+function nextOrder(name){var m=folderMembers(name);return m.length?(m[m.length-1].order||0)+1:1}
+// 順番を 1,2,3… に振り直す
+function renumber(name){folderMembers(name).forEach(function(p,i){p.order=i+1})}
 function filtered(){
   var q=S.f.q.trim().toLowerCase().split(/\s+/).filter(Boolean);
   var fc=S.f.cats,ft=S.f.tags,and=S.f.tagMode==="and";
@@ -1279,23 +1325,49 @@ function renderList(){
   $("#fGo").textContent="一覧を見る（"+r.length+"件）";
   updateNav();
   if(!r.length){$("#rows").innerHTML=emptyHTML();return}
-  $("#rows").innerHTML=r.map(function(p){
-    var on=!!S.sel[p.id],big=p.kind==="sit"||p.kind==="char";
-    return '<div class="row '+p.kind+(on?" sel":"")+'" data-id="'+esc(p.id)+'" tabindex="0">'+
+  // フォルダに入っているシチュエーションは、最初に出てくる位置にフォルダとしてまとめる
+  var html=[],done={},openAll=!!S.f.q.trim();
+  r.forEach(function(p){
+    if(p.kind==="sit"&&p.folder){
+      if(done[p.folder])return;done[p.folder]=1;
+      var mem=r.filter(function(x){return x.kind==="sit"&&x.folder===p.folder}).sort(byOrder);
+      var all=folderMembers(p.folder),open=openAll||!!S.openF[p.folder];
+      html.push(folderRowHTML(p.folder,mem,all,open));
+      if(open)mem.forEach(function(m){html.push(rowHTML(m,all))});
+      return;
+    }
+    html.push(rowHTML(p));
+  });
+  $("#rows").innerHTML=html.join("");
+}
+function folderRowHTML(name,mem,all,open){
+  var on=mem.length&&mem.every(function(m){return S.sel[m.id]});
+  return '<div class="row sit folder" data-folder="'+esc(name)+'" tabindex="0" aria-expanded="'+open+'">'+
+    '<button class="chk'+(on?" on":"")+'" data-a="fsel" role="checkbox" aria-checked="'+on+'" aria-label="フォルダ内をまとめて選択">✓</button>'+
+    '<span class="ftog" aria-hidden="true">'+(open?"▾":"▸")+'</span>'+
+    '<div class="rmain"><div class="rname"><span class="kb fold">フォルダ</span>'+esc(name)+
+      ' <span class="hint" style="font-weight:400">'+all.length+' シーン'+(mem.length<all.length?"（条件に合うのは "+mem.length+"）":"")+'</span></div>'+
+    '<div class="rtext">'+esc(all.map(function(m){return m.name}).join(" → "))+'</div></div>'+
+    '<span class="ract"><button class="ico" data-a="fren" title="フォルダ名を変更">✎</button></span></div>';
+}
+function rowHTML(p,all){
+    var on=!!S.sel[p.id],big=p.kind==="sit"||p.kind==="char",inF=!!all,ix=inF?all.indexOf(p):-1;
+    return '<div class="row '+p.kind+(inF?" infolder":"")+(on?" sel":"")+'" data-id="'+esc(p.id)+'" tabindex="0">'+
       '<button class="chk'+(on?" on":"")+'" data-a="sel" role="checkbox" aria-checked="'+on+
         '" aria-label="選択">✓</button>'+
-      '<div class="rmain"><div class="rname">'+(big?'<span class="kb '+p.kind+'">'+KLAB[p.kind]+'</span>':"")+
+      '<div class="rmain"><div class="rname">'+(inF?'<span class="sn2">'+(ix+1)+'.</span>':(big?'<span class="kb '+p.kind+'">'+KLAB[p.kind]+'</span>':""))+
         esc(p.name||"(名称なし)")+(p.nl?' <span class="nlb">文章</span>':"")+
         (p.fav?' <span class="star on">★</span>':"")+'</div>'+
       '<div class="rtext">'+esc(p.text)+'</div></div>'+
       '<span class="rcat">'+esc(p.cat)+'</span>'+
       '<span class="uses">'+(p.uses||0)+'</span>'+
       '<span class="ract">'+
+        (inF?'<button class="ico" data-a="fup" title="前へ"'+(ix<=0?" disabled":"")+'>↑</button>'+
+          '<button class="ico" data-a="fdn" title="後ろへ"'+(ix>=all.length-1?" disabled":"")+'>↓</button>':'')+
         '<button class="ico" data-a="fav" title="お気に入り"><span class="star'+(p.fav?" on":"")+'">★</span></button>'+
         '<button class="ico" data-a="edit" title="編集">✎</button>'+
         '<button class="ico" data-a="del" title="削除">🗑</button>'+
       '</span></div>';
-  }).join("");
 }
 
 /* ---------- 描画：組み立て ---------- */
@@ -1360,7 +1432,7 @@ function lineCount(i){
 }
 function lineHTML(i){
   return '<div class="lineBox"><div class="zhead"><span class="zlab">キャラ'+(i+1)+'のセリフ</span>'+
-    '<span class="hint">保存されません</span><span class="grow"></span><span class="hint" id="lineCnt">'+esc(lineCount(i))+'</span></div>'+
+    '<span class="hint">ここでの書き換えは保存されません</span><span class="grow"></span><span class="hint" id="lineCnt">'+esc(lineCount(i))+'</span></div>'+
     '<textarea class="fld line" data-line="'+i+'" rows="2" placeholder="吹き出しに出すセリフ（例：おはよう！）">'+esc(S.comp.lines[i]||"")+'</textarea>'+
     '<label class="chk2" style="margin:6px 0 4px"><input type="checkbox" data-bubble="'+i+'"'+(bubbleOf(i)?" checked":"")+'> 吹き出しにする（<code>speech bubble</code> を付ける）</label>'+
     '<div class="hint">キャラ欄の最後に '+(S.comp.svc==="nai"?'<code>Text: セリフ</code>':'<code>"セリフ"</code>')+' として入ります。</div></div>';
@@ -1371,6 +1443,15 @@ function renderComp(){
   document.querySelectorAll("#svc [data-svc]").forEach(function(b){b.classList.toggle("on",b.dataset.svc===S.comp.svc)});
   var nm=$("#wName");
   nm.textContent=w.name||(src?src.name:"（未保存：一覧から選ぶか、項目を追加して「別件として保存」）");
+  // フォルダに入っているシーンなら、フォルダ名と何番目のシーンかを出し、別のシーンへ切り替えられるようにする
+  var fb=$("#folderBar"),inF=src&&src.kind==="sit"&&src.folder;
+  fb.classList.toggle("on",!!inF);
+  if(inF){
+    var mem=folderMembers(src.folder),ix=mem.indexOf(src);
+    fb.innerHTML='<span>フォルダ <b></b>　シーン '+(ix+1)+' / '+mem.length+'</span><span class="grow"></span>'+
+      '<button class="btn mini" id="fNext" aria-haspopup="true">次のシーンを選ぶ ▾</button>';
+    fb.querySelector("b").textContent=src.folder;
+  }else fb.innerHTML="";
   nm.classList.toggle("none",!w.name);
   $("#wSave").disabled=!src||src.kind!=="sit";
   $("#wRevert").disabled=!src||src.kind!=="sit";
@@ -1422,10 +1503,18 @@ function ensureSlots(){
   var need=Math.min(slotCount(W()),MAXCH);
   while(S.comp.chars.length<need)S.comp.chars.push(null);
 }
+function applyLines(p){
+  var sp=slotPair(p);
+  S.comp.lines=sp.slotLines.slice();S.comp.bubbles=sp.slotBubbles.slice();
+}
 function loadSit(p){
   if(workDirty()&&W().from!==p.id&&!confirmDiscard("組み立て中のシチュエーション"))return false;
   if(workDirty()&&W().from===p.id&&!confirmDiscard("「"+p.name+"」"))return false;
+  // 同じフォルダの別のシーンへ切り替えるとき、または登録セリフのあるシチュエーションを読み込むときは、
+  // キャラ枠は残して、セリフを読み込んだシチュエーションの登録セリフに入れ替える
+  var prev=byId(W().from),sameF=prev&&prev.kind==="sit"&&prev.folder&&prev.folder===p.folder&&prev.id!==p.id;
   S.comp.work=workFrom(p);S.comp.tgt="base";
+  if(sameF||lineCountOf(p))applyLines(p);
   ensureSlots();
   p.uses=(p.uses||0)+1;
   return true;
@@ -1475,8 +1564,9 @@ function findChip(cid){
 function setEntrySit(p,w){
   var base=w.base.slice();
   if(w.free&&w.free.trim()){base=base.concat(textToChips(w.free));w.base=base;w.free=""}
-  var sp=normSlotPair(w.slots.map(cloneChips),w.slotSex);
-  p.base=cloneChips(base);p.neg=cloneChips(w.neg);p.slots=sp.slots;p.slotSex=sp.slotSex;p.noOutfit=!!w.noOutfit;
+  var sp=normSlotPair(w.slots.map(cloneChips),w.slotSex,w.slotLines,w.slotBubbles);
+  p.base=cloneChips(base);p.neg=cloneChips(w.neg);p.slots=sp.slots;p.slotSex=sp.slotSex;
+  p.slotLines=sp.slotLines;p.slotBubbles=sp.slotBubbles;p.noOutfit=!!w.noOutfit;
   p.text=summary(p);
 }
 function setEntryChar(p,c){
@@ -1524,9 +1614,11 @@ var HEAD={
   nl:["形式","format","style"],
   neg:["ネガティブ","negative"],
   outfit:["服装","outfit"],
-  sex:["性別","sex","gender"]
+  sex:["性別","sex","gender"],
+  folder:["フォルダ","folder","group"],
+  order:["順番","order"]
 };
-var FIELDS=["cat","name","text","tags","note","kind","nl","neg","outfit","sex"];
+var FIELDS=["cat","name","text","tags","note","kind","nl","neg","outfit","sex","folder","order"];
 // 1行目が見出し行かどうかを判定し、列番号の対応表を返す（見出しでなければ null）
 function headerMap(row){
   var m={},hit=0;
@@ -1560,7 +1652,8 @@ function kindOf(v){
 function toPrompt(o){
   var kind=kindOf(o.kind),base={id:uid(),kind:kind,cat:str(o.cat).trim(),name:str(o.name).trim(),
     tags:splitTags(o.tags),note:str(o.note).trim(),fav:false,uses:0,created:Date.now()-Math.random()};
-  if(kind==="sit"){base.base=textToChips(o.text);base.neg=textToChips(o.neg);base.slots=[];base.noOutfit=false}
+  if(kind==="sit"){base.base=textToChips(o.text);base.neg=textToChips(o.neg);base.slots=[];base.noOutfit=false;
+    base.folder=str(o.folder).trim();base.order=Number(o.order)||0}
   else if(kind==="char"){
     base.look=textToChips(o.text);base.outfit=textToChips(o.outfit);
     base.sex=/男|boy|male/i.test(str(o.sex))?"boy":(/その他|other/i.test(str(o.sex))?"other":"girl");
@@ -1587,6 +1680,11 @@ function impVisible(){
     if(q.length){var hay=hayOf(r);for(var j=0;j<q.length;j++)if(hay.indexOf(q[j])<0)return}
     out.push(i);
   });
+  // 同じフォルダのシーンは並べて、フォルダ内の順番で表示する
+  var first={};
+  p.rows.forEach(function(r,i){if(r.kind==="sit"&&r.folder&&first[r.folder]==null)first[r.folder]=i});
+  var key=function(i){var r=p.rows[i];return r.kind==="sit"&&r.folder?first[r.folder]:i};
+  out.sort(function(a,b){return key(a)-key(b)||(p.rows[a].order||0)-(p.rows[b].order||0)||a-b});
   return out;
 }
 function renderImp(){
@@ -1597,7 +1695,8 @@ function renderImp(){
     var r=p.rows[i];
     return '<label class="impRow '+r.kind+(p.sel[i]?"":" off")+'"><input type="checkbox" data-ii="'+i+'"'+(p.sel[i]?" checked":"")+'>'+
       '<span class="im"><span class="in"><span class="kb '+r.kind+'">'+KLAB[r.kind]+'</span>'+esc(r.name)+
-      (r.nl?' <span class="nlb">文章</span>':'')+(p.dup[i]?' <span class="dupb">登録済み</span>':'')+'</span>'+
+      (r.nl?' <span class="nlb">文章</span>':'')+(p.dup[i]?' <span class="dupb">登録済み</span>':'')+
+      (r.kind==="sit"&&r.folder?' <span class="hint">フォルダ「'+esc(r.folder)+'」</span>':'')+'</span>'+
       '<span class="it">'+esc(r.text)+'</span></span><span class="ic">'+esc(r.cat)+'</span></label>';
   }).join(""):'<div class="empty" style="padding:28px 12px">条件に合う項目がありません。</div>';
   updateImpCount();
@@ -1707,7 +1806,9 @@ function sheetRows(){
       "形式":sit||ch?"":(p.nl?"文章":"タグ"),
       "ネガティブ":sit?chipsToText(p.neg):"",
       "服装":ch?chipsToText(p.outfit):"",
-      "性別":ch?SEXLAB[p.sex]:""};
+      "性別":ch?SEXLAB[p.sex]:"",
+      "フォルダ":sit?(p.folder||""):"",
+      "順番":sit&&p.folder?p.order:""};
   });
 }
 function expo(kind){
@@ -1731,7 +1832,7 @@ function expo(kind){
     }
     var wb2=X.utils.book_new();
     var ws=X.utils.json_to_sheet(sheetRows());
-    ws["!cols"]=[{wch:16},{wch:22},{wch:52},{wch:18},{wch:20},{wch:8},{wch:8},{wch:40},{wch:30},{wch:8}];
+    ws["!cols"]=[{wch:16},{wch:22},{wch:52},{wch:18},{wch:20},{wch:8},{wch:8},{wch:40},{wch:30},{wch:8},{wch:20},{wch:6}];
     X.utils.book_append_sheet(wb2,ws,"prompts");
     X.writeFile(wb2,"prompt-library-"+stamp()+"."+(kind==="csv"?"csv":"xlsx"));
   },xlsxFail);
@@ -1757,13 +1858,42 @@ $("#tagMode").addEventListener("click",function(e){
   var b=e.target.closest("[data-m]");if(!b)return;
   S.f.tagMode=b.dataset.m;render();
 });
+function renameFolder(old){
+  var n=prompt("フォルダ名",old);if(n==null)return;n=n.trim();
+  if(!n||n===old)return;
+  var exists=folderNames().indexOf(n)>=0;
+  if(exists&&!confirm("フォルダ「"+n+"」はすでにあります。「"+old+"」のシーンを後ろに加えてまとめますか？"))return;
+  var base=exists?nextOrder(n):0;
+  folderMembers(old).forEach(function(p,i){p.folder=n;if(exists)p.order=base+i});
+  if(S.openF[old]){S.openF[n]=1;delete S.openF[old]}
+  render();save();toast("フォルダ名を変更しました");
+}
+function moveScene(p,d){
+  var all=folderMembers(p.folder),i=all.indexOf(p),j=i+d;
+  if(j<0||j>=all.length)return;
+  all.splice(i,1);all.splice(j,0,p);
+  all.forEach(function(m,k){m.order=k+1});
+  renderList();renderComp();save();
+}
 $("#list").addEventListener("click",function(e){
   var row=e.target.closest(".row");if(!row)return;
+  var act=e.target.closest("[data-a]");
+  if(row.dataset.folder!=null){
+    var fn=row.dataset.folder,a0=act&&act.dataset.a;
+    if(a0==="fren"){renameFolder(fn);return}
+    if(a0==="fsel"){
+      var mem=filtered().filter(function(x){return x.kind==="sit"&&x.folder===fn});
+      var allOn=mem.every(function(m){return S.sel[m.id]});
+      mem.forEach(function(m){if(allOn)delete S.sel[m.id];else S.sel[m.id]=true});
+      renderList();return}
+    if(S.openF[fn])delete S.openF[fn];else S.openF[fn]=1;
+    renderList();return;
+  }
   var p=byId(row.dataset.id);
   if(!p)return;
-  var act=e.target.closest("[data-a]");
   if(!act){addToMemo(p);return}
   var a=act.dataset.a;
+  if(a==="fup"||a==="fdn"){moveScene(p,a==="fup"?-1:1);return}
   if(a==="sel"){
     if(S.sel[p.id])delete S.sel[p.id];else S.sel[p.id]=true;
     renderList();return}
@@ -1816,6 +1946,7 @@ $("#bSelAll").addEventListener("click",function(){
 $("#list").addEventListener("keydown",function(e){
   if(e.key!=="Enter")return;var row=e.target.closest(".row");if(!row||e.target!==row)return;
   e.preventDefault();
+  if(row.dataset.folder!=null){var fn=row.dataset.folder;if(S.openF[fn])delete S.openF[fn];else S.openF[fn]=1;renderList();return}
   var p=byId(row.dataset.id);if(p)addToMemo(p);
 });
 
@@ -1841,14 +1972,16 @@ $("#wSaveAs").addEventListener("click",function(){
   var n=prompt("新しいシチュエーションの名前",w.name?w.name+" のコピー":"シチュエーション"+(S.prompts.filter(function(p){return p.kind==="sit"}).length+1));
   if(n==null||!n.trim())return;
   var p=newEntry("sit",n.trim(),src&&src.kind==="sit"?src:null);
-  setEntrySit(p,w);S.prompts.push(p);syncCats();
+  setEntrySit(p,w);
+  if(src&&src.kind==="sit"&&src.folder){p.folder=src.folder;p.order=src.order+0.5}
+  S.prompts.push(p);if(p.folder)renumber(p.folder);syncCats();
   w.from=p.id;w.name=p.name;
   render();save();toast("シチュエーション「"+p.name+"」として保存しました");
 });
 $("#wRevert").addEventListener("click",function(){
   var p=byId(W().from);if(!p||p.kind!=="sit")return;
   if(workDirty()&&!confirmDiscard("「"+p.name+"」"))return;
-  S.comp.work=workFrom(p);ensureSlots();changed();toast("登録内容に戻しました");
+  S.comp.work=workFrom(p);applyLines(p);ensureSlots();changed();toast("登録内容に戻しました（セリフも登録内容に戻ります）");
 });
 $("#wClear").addEventListener("click",function(){
   if(workDirty()&&!confirmDiscard("組み立て中のシチュエーション"))return;
@@ -1865,6 +1998,42 @@ $("#allClear").addEventListener("click",function(){
   S.comp.work=emptyWork();S.comp.chars=[];S.comp.lines=[];S.comp.bubbles=[];S.comp.slot=0;S.comp.tgt="base";
   changed();toast("シチュエーションとキャラをすべて外しました");
 });
+function openSceneMenu(btn){
+  var src=byId(W().from);if(!src||!src.folder)return;
+  var m=$("#sceneMenu"),mem=folderMembers(src.folder);
+  m.innerHTML='<div class="mh">フォルダ「'+esc(src.folder)+'」のシーン（キャラはそのまま・セリフは切り替え先の登録内容になります）</div>'+
+    mem.map(function(p,i){return '<button data-scene="'+esc(p.id)+'"'+(p===src?' class="cur"':'')+'>'+(i+1)+'. '+esc(p.name)+(p===src?'（表示中）':'')+'</button>'}).join("")+
+    '<hr><button data-dupscene="1">＋ 今のシーンを複製して、このフォルダに追加</button>';
+  var r=btn.getBoundingClientRect();
+  m.style.top=(r.bottom+window.scrollY+6)+"px";
+  m.style.left=Math.max(8,Math.min(r.right-m.offsetWidth,window.innerWidth-m.offsetWidth-8))+"px";
+  m.classList.add("on");
+  var rr=m.getBoundingClientRect();m.style.left=Math.max(8,Math.min(r.right-rr.width,window.innerWidth-rr.width-8))+"px";
+}
+$("#folderBar").addEventListener("click",function(e){
+  var b=e.target.closest("#fNext");if(!b)return;
+  e.stopPropagation();
+  if($("#sceneMenu").classList.contains("on")){$("#sceneMenu").classList.remove("on");return}
+  openSceneMenu(b);
+});
+$("#sceneMenu").addEventListener("click",function(e){
+  var b=e.target.closest("[data-scene],[data-dupscene]");if(!b)return;
+  $("#sceneMenu").classList.remove("on");
+  var src=byId(W().from);
+  if(b.dataset.dupscene){
+    if(!src)return;
+    var n=prompt("新しいシーンの名前",src.name+" のコピー");if(n==null||!n.trim())return;
+    var q=newEntry("sit",n.trim(),src);
+    setEntrySit(q,W());q.folder=src.folder;q.order=src.order+0.5;
+    S.prompts.push(q);renumber(src.folder);
+    S.comp.work=workFrom(q);applyLines(q);ensureSlots();
+    render();save();toast("シーン「"+q.name+"」を作って切り替えました（キャラはそのまま・セリフはこのシーンの登録内容）");
+    return;
+  }
+  var p=byId(b.dataset.scene);if(!p||p===src)return;
+  if(loadSit(p)){render();save();toast("シーン「"+p.name+"」に切り替えました（キャラはそのまま・セリフはこのシーンの登録内容）")}
+});
+document.addEventListener("click",function(e){if(!e.target.closest("#sceneMenu"))$("#sceneMenu").classList.remove("on")});
 $("#free").addEventListener("input",function(){W().free=this.value;updateOut();save()});
 $("#noOutfit").addEventListener("change",function(){W().noOutfit=this.checked;updateOut();save()});
 
@@ -1883,7 +2052,7 @@ $("#slots").addEventListener("click",function(e){
     if(c&&charDirty(c)&&!confirmDiscard("キャラ「"+c.name+"」"))return;
     S.comp.chars.splice(i,1);
     // 枠を外すと、その枠の状態と想定の性別も外す（以降の枠は1つずつ前に詰める）
-    var w=W();if(w.slots.length>i)w.slots.splice(i,1);if(w.slotSex.length>i)w.slotSex.splice(i,1);
+    var w=W();[w.slots,w.slotSex,w.slotLines,w.slotBubbles].forEach(function(a){if(a&&a.length>i)a.splice(i,1)});
     if(S.comp.lines.length>i)S.comp.lines.splice(i,1);if(S.comp.bubbles.length>i)S.comp.bubbles.splice(i,1);
     if(S.comp.slot>=S.comp.chars.length)S.comp.slot=Math.max(0,S.comp.chars.length-1);
     changed();return}
@@ -2056,22 +2225,25 @@ function eSlotHTML(r,i){
   return '<div class="eslot" data-i="'+i+'"><div class="eslotHead"><span class="sn">キャラ'+(i+1)+'</span>'+
     '<span class="hint">想定の性別</span><select class="fld" data-sx>'+sexOpts(r.sex)+'</select>'+
     '<span class="grow"></span><button type="button" class="ico" data-rm title="この枠を削除">×</button></div>'+
-    '<textarea class="fld" data-tx placeholder="smile, wet hair, source#hug">'+esc(r.text)+'</textarea></div>';
+    '<textarea class="fld" data-tx placeholder="状態：smile, wet hair, source#hug">'+esc(r.text)+'</textarea>'+
+    '<div class="eslotLine"><span class="hint">セリフ</span><label class="chk2" style="margin:0"><input type="checkbox" data-bb'+(r.bubble!==false?" checked":"")+'> 吹き出しにする</label></div>'+
+    '<textarea class="fld line" data-ln rows="2" placeholder="セリフ（例：おはよう！）">'+esc(r.line||"")+'</textarea></div>';
 }
 function readESlots(){
   return Array.prototype.map.call(document.querySelectorAll("#eSlots .eslot"),function(el){
-    return {sex:el.querySelector("[data-sx]").value,text:el.querySelector("[data-tx]").value};
+    return {sex:el.querySelector("[data-sx]").value,text:el.querySelector("[data-tx]").value,
+      line:el.querySelector("[data-ln]").value,bubble:el.querySelector("[data-bb]").checked};
   });
 }
 function renderESlots(rows){$("#eSlots").innerHTML=rows.map(eSlotHTML).join("")}
 function eSlotsFrom(p){
   if(!p||p.kind!=="sit")return [];
-  var sp=normSlotPair(p.slots,p.slotSex);
-  return sp.slots.map(function(a,i){return {sex:sp.slotSex[i],text:chipsToText(a)}});
+  var sp=slotPair(p);
+  return sp.slots.map(function(a,i){return {sex:sp.slotSex[i],text:chipsToText(a),line:sp.slotLines[i],bubble:sp.slotBubbles[i]}});
 }
 $("#eAddSlot").addEventListener("click",function(){
   var rows=readESlots();if(rows.length>=MAXCH)return;
-  rows.push({sex:"girl",text:""});renderESlots(rows);
+  rows.push({sex:"girl",text:"",line:"",bubble:true});renderESlots(rows);
   var t=document.querySelectorAll("#eSlots [data-tx]");t[t.length-1].focus();
 });
 $("#eSlots").addEventListener("click",function(e){
@@ -2090,6 +2262,8 @@ function openEdit(p){
   $("#eBase").value=p&&p.kind==="sit"?chipsToText(p.base):"";
   $("#eNeg").value=p&&p.kind==="sit"?chipsToText(p.neg):"";
   $("#eNoOutfit").checked=p&&p.kind==="sit"?!!p.noOutfit:false;
+  $("#eFolder").value=p&&p.kind==="sit"?(p.folder||""):"";
+  $("#folderList").innerHTML=folderNames().map(function(x){return '<option value="'+esc(x)+'">'}).join("");
   renderESlots(eSlotsFrom(p));
   $("#eSex").value=p&&p.kind==="char"?p.sex:"girl";
   $("#eLook").value=p&&p.kind==="char"?chipsToText(p.look):"";
@@ -2135,7 +2309,7 @@ function convLoss(p,k){
     if(k==="pos"&&p.neg.length)lost.push("ネガティブ");
     if(k==="neg"&&p.base.length)lost.push("ベース");
     if(k==="char"&&p.neg.length)lost.push("ネガティブ");
-    if(slotCount(p))lost.push("キャラ枠ごとの状態");
+    if(slotCount(p))lost.push("キャラ枠ごとの状態・セリフ");
     if(p.noOutfit)lost.push("「服装を使わない」の設定");
   }
   if(p.kind==="char"&&k!=="char"){
@@ -2190,7 +2364,7 @@ function convertEntry(p,k,sex){
   }else{
     o={sex:sex,look:(from==="pos"||from==="neg")?chipsOfText(p):(from==="sit"?cloneChips(p.base):[]),outfit:[]};
   }
-  ["text","nl","base","neg","slots","slotSex","noOutfit","sex","look","outfit"].forEach(function(f){delete p[f]});
+  ["text","nl","base","neg","slots","slotSex","slotLines","slotBubbles","noOutfit","folder","order","sex","look","outfit"].forEach(function(f){delete p[f]});
   for(var x in o)p[x]=o[x];
   if(!p.cat||p.cat===KDEFCAT[from])p.cat=KDEFCAT[k];
   p.kind=k;
@@ -2242,10 +2416,14 @@ $("#eSave").addEventListener("click",function(){
     tags:splitTags($("#eTags").value),note:$("#eNote").value.trim()};
   if(k==="sit"){
     var rows=readESlots(),oldSlots=ed&&ed.kind==="sit"&&ed.slots||[];
-    var sp=normSlotPair(rows.map(function(r,i){return textToChips(r.text,oldSlots[i])}),rows.map(function(r){return r.sex}));
+    var sp=normSlotPair(rows.map(function(r,i){return textToChips(r.text,oldSlots[i])}),rows.map(function(r){return r.sex}),
+      rows.map(function(r){return r.line.trim()}),rows.map(function(r){return r.bubble}));
     o={kind:"sit",base:textToChips($("#eBase").value,ed&&ed.base),neg:textToChips($("#eNeg").value,ed&&ed.neg),
-      noOutfit:$("#eNoOutfit").checked,slots:sp.slots,slotSex:sp.slotSex};
-    if(!o.base.length&&!o.neg.length&&!o.slots.length){toast("ベース・ネガティブ・キャラ枠ごとの状態のどれかを入力してください");$("#eBase").focus();return}
+      noOutfit:$("#eNoOutfit").checked,slots:sp.slots,slotSex:sp.slotSex,slotLines:sp.slotLines,slotBubbles:sp.slotBubbles};
+    var fd=$("#eFolder").value.trim().slice(0,80);
+    o.folder=fd;
+    o.order=fd?(ed&&ed.kind==="sit"&&ed.folder===fd?ed.order:nextOrder(fd)):0;
+    if(!o.base.length&&!o.neg.length&&!o.slots.length){toast("ベース・ネガティブ・キャラ枠ごとの状態（セリフ）のどれかを入力してください");$("#eBase").focus();return}
     common.cat=common.cat||CAT_SIT;
     common.name=common.name||"シチュエーション"+(S.prompts.filter(function(p){return p.kind==="sit"}).length+1);
   }else if(k==="char"){
@@ -2279,7 +2457,7 @@ $("#eSave").addEventListener("click",function(){
         unlinked.forEach(function(ch){ch.pid=eid});
       });
     }
-    ["text","nl","base","neg","slots","slotSex","noOutfit","sex","look","outfit"].forEach(function(f){delete ed[f]});
+    ["text","nl","base","neg","slots","slotSex","slotLines","slotBubbles","noOutfit","folder","order","sex","look","outfit"].forEach(function(f){delete ed[f]});
   }
   if(ed){
     // 組み立てに読み込み中で、変更していない場合は登録内容に合わせて読み直す
@@ -2292,7 +2470,7 @@ $("#eSave").addEventListener("click",function(){
       // チップの中身が変わったシチュエーション・キャラの一覧表示（要約）も更新する
       S.prompts.forEach(function(q){if(isBig(q.kind))q.text=summary(q)});
     }
-    if(wClean)S.comp.work=workFrom(ed);
+    if(wClean){S.comp.work=workFrom(ed);applyLines(ed);ensureSlots()}
     else if(ed.kind==="sit"&&W().from===ed.id)W().name=ed.name;
     S.comp.chars.forEach(function(ch,j){if(ch&&ch.from===ed.id){if(cClean.indexOf(j)>=0)S.comp.chars[j]=charFrom(ed);else ch.name=ed.name}});
   }else{
