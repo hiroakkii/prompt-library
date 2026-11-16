@@ -361,6 +361,41 @@
   #moreMenu .mck{width:1.2em; flex:none; color:var(--pos-dk); font-weight:700}
   .tgtbar .fx{color:var(--ink3)}
   /* 順番コピーのバー（組み立ての下端に固定） */
+  /* 組み立ての3ブロックの開閉 */
+  .bfold{width:44px; height:44px; flex:none; margin:-9px -4px -9px -12px; border-radius:var(--r); color:var(--ink3); font-size:15px; line-height:1; display:grid; place-items:center}
+  .bfold:hover{background:var(--wash); color:var(--ink)}
+  .btitle[data-fold]{cursor:pointer}
+  .bsum{display:none; font-size:13px; color:var(--ink2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin:-4px 0 8px}
+  .blk.folded .bsum{display:block}
+  .blk.folded>*:not(.bhead):not(.bsum){display:none}
+  .blk.folded>.bhead{margin-bottom:6px}
+  .blk.folded>.bhead .wname{display:none}
+  .blk.folded{padding-bottom:4px; min-height:0}
+  /* 編集画面：見出し・本文（ここだけスクロール）・ボタン帯 */
+  #mEdit .card{display:flex; flex-direction:column; padding:0; overflow:hidden}
+  .edHead{display:flex; align-items:center; gap:8px; flex:none; padding:16px 20px 12px}
+  .edHead h3{margin:0; flex:1; min-width:0; font-size:17px}
+  .edHead .edClose{display:none}
+  .edBody{flex:1; min-height:0; overflow-y:auto; padding:0 20px 4px; -webkit-overflow-scrolling:touch}
+  .edActs{display:flex; align-items:center; gap:8px; flex:none; justify-content:flex-end; padding:12px 20px 14px; margin:0; border-top:1px solid var(--rule); background:var(--sheet)}
+  .edActs #eMuse{margin-right:auto}
+  .eslotHead{margin-bottom:0}
+  .eslot:not(.shut) .eslotHead{margin-bottom:6px}
+  .eslotTog{display:flex; align-items:center; gap:8px; flex:1; min-width:0; min-height:32px; text-align:left; color:var(--ink)}
+  .eslotTog .tg{width:16px; flex:none; color:var(--ink3); font-size:13px; text-align:center}
+  .eslotTog .esum{flex:1; min-width:0; font-size:13px; color:var(--ink2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .eslot:not(.shut) .esum{display:none}
+  .eslot.shut .eslotSx{display:none}
+  .eslot.shut>*:not(.eslotHead){display:none}
+  .eslotSx{display:flex; align-items:center; gap:8px}
+  /* 取り込み：同じ名前の項目を上書き */
+  .owb{font-size:11px; padding:0 7px; border-radius:999px; background:var(--char-bg); color:#7A4A06; border:1px solid #EBC98E; line-height:17px; white-space:nowrap}
+  .impRow .owBtn{flex:none; min-height:36px}
+  /* バックアップの案内 */
+  .bkNote{align-items:center; gap:6px 12px; flex-wrap:wrap; flex:none; padding-top:7px; padding-bottom:7px}
+  .bkNote .bkTx{flex:1 1 280px; min-width:0}
+  .bkNote .bkBtns{display:flex; gap:8px; margin-left:auto}
+  .bkNote .btn{min-height:36px}
   .seq{display:none; flex:none; background:var(--sheet); border-top:1px solid var(--rule); box-shadow:0 -4px 14px rgba(28,38,51,.08); padding:5px 12px 6px}
   .seq.on{display:block}
   .seqList{display:flex; gap:6px; overflow-x:auto; scrollbar-width:none; margin-bottom:4px}
@@ -433,6 +468,23 @@
     .card.wide .acts .go{flex-basis:100%; order:-1}
     .impRow .ic{display:none}
     .impRow{padding:7px 10px}
+    /* 編集画面：全画面のシート */
+    #mEdit{padding:0; background:none}
+    #mEdit .card{width:100%; height:100vh; height:100dvh; max-height:none; border-radius:0; box-shadow:none}
+    .edHead{padding:calc(6px + env(safe-area-inset-top)) 6px 6px 16px; border-bottom:1px solid var(--rule)}
+    .edHead .edClose{display:block; flex:none; min-width:44px; height:44px; padding:0 10px}
+    .edBody{padding:14px 16px 16px}
+    .edActs{padding:10px 16px calc(10px + env(safe-area-inset-bottom)); gap:8px}
+    .edActs .btn{min-height:44px}
+    .edActs #eSave{flex:1; min-width:0}
+    .eslotTog{min-height:44px}
+    .eslot .ico{width:44px; height:44px; font-size:17px}
+    .eslotHead{flex-wrap:wrap}
+    body:has(#mEdit.on) .toast{bottom:calc(88px + env(safe-area-inset-bottom))!important}
+    .impRow{flex-wrap:wrap}
+    .impRow .im{flex:1 1 calc(100% - 44px)}
+    .impRow .in{flex-wrap:wrap; row-gap:2px}
+    .impRow .owBtn{min-height:40px; margin:2px 0 4px 34px}
   }
   /* PC：左に一覧、右に組み立てを常に並べる */
   @media (min-width:1100px){
@@ -455,6 +507,7 @@
   <header class="bar"><div class="brand">プロンプトライブラリ</div></header>
 
   <div id="warn" class="warn"></div>
+  <div id="bkNote" class="warn bkNote" role="status"></div>
 
   <nav class="mtabs" id="mtabs">
     <button class="mtab on" data-v="1">プロンプト</button>
@@ -543,12 +596,14 @@
 
     <div class="blk sit">
       <div class="bhead">
-        <span class="btitle">シチュエーション</span>
+        <button class="bfold" data-fold="sit" aria-expanded="true" aria-controls="sumSit" aria-label="シチュエーションを開閉">▾</button>
+        <span class="btitle" data-fold="sit">シチュエーション</span>
         <span class="wname" id="wName"></span>
         <span class="dirty" id="wDirty">未保存の変更</span>
         <span class="grow"></span>
         <button class="btn mini" id="wPick">一覧から選ぶ</button>
       </div>
+      <div class="bsum" id="sumSit"></div>
       <div class="acts2">
         <button class="btn mini" id="wSave">上書き保存</button>
         <button class="btn mini" id="wSaveAs">別件として保存</button>
@@ -565,11 +620,13 @@
 
     <div class="blk char">
       <div class="bhead">
-        <span class="btitle">キャラ</span><span class="hint" id="charCnt"></span>
+        <button class="bfold" data-fold="char" aria-expanded="true" aria-controls="sumChar" aria-label="キャラを開閉">▾</button>
+        <span class="btitle" data-fold="char">キャラ</span><span class="hint" id="charCnt"></span>
         <span class="grow"></span>
         <button class="btn mini" id="cPick">一覧から選ぶ</button>
         <button class="btn mini" id="bAddSlot">＋キャラ枠</button>
       </div>
+      <div class="bsum" id="sumChar"></div>
       <div id="slots"></div>
       <div class="cedit" id="cedit">
         <div class="bhead">
@@ -593,12 +650,14 @@
 
     <div class="blk out">
       <div class="bhead">
-        <span class="btitle">出力</span>
+        <button class="bfold" data-fold="out" aria-expanded="true" aria-controls="sumOut" aria-label="出力を開閉">▾</button>
+        <span class="btitle" data-fold="out">出力</span>
         <span class="grow"></span>
         <label class="chk2" style="margin:0"><input type="checkbox" id="showGloss"> 訳を表示</label>
         <button class="btn mini" id="cpAll" title=".txt と同じ形（見出し付き）で、すべての出力をまとめてコピーします">まとめてコピー</button>
         <button class="btn mini" id="dlTxt">.txtで保存</button>
       </div>
+      <div class="bsum" id="sumOut"></div>
       <div class="openBar" id="openBar"></div>
       <div id="outBox"></div>
     </div>
@@ -609,7 +668,8 @@
 </div>
 
 <div class="modal" id="mEdit"><div class="card">
-  <h3 id="edTitle">プロンプトを追加</h3>
+  <div class="edHead"><h3 id="edTitle">プロンプトを追加</h3><button class="btn edClose" id="eClose">閉じる</button></div>
+  <div class="edBody" id="edBody">
   <div class="fr">
     <div class="f"><label>種別</label><select class="fld" id="eKind">
       <option value="pos">ポジティブ</option>
@@ -647,7 +707,9 @@
   <p class="hint" id="gHint" style="display:none;margin:-4px 0 11px">1行ごとに、カンマ区切りのタグか文章を書きます。文章は文末を「.」で終えてください。重みは <code>(tag:1.2)</code> で書けます。</p>
   <div class="f"><label>タグ（, 区切り・任意）</label><input class="fld" id="eTags" placeholder="自作, 女性"></div>
   <div class="f"><label>メモ（任意）</label><textarea class="fld noteArea" id="eNote" rows="5" placeholder="使い方や注意点など（改行できます）"></textarea></div>
-  <div class="acts">
+  </div>
+  <div class="edActs">
+    <button class="btn" id="eMuse" style="display:none">Muse 用にコピー</button>
     <button class="btn" data-close>キャンセル</button>
     <button class="btn go" id="eSave">保存</button>
   </div>
@@ -685,11 +747,11 @@
     <span class="hint" id="impCount"></span>
   </div>
   <div class="impList" id="impList"></div>
-  <p class="note" style="margin:10px 0 0">「登録済み」は、いま登録されている項目（またはこのファイル内の前の項目）と同じ内容です。最初は選ばれていません。選んで追加すると重複して登録されます。「全置換」は、選んだ項目だけでいまのデータを置き換えます（直後なら元に戻せます。設定画面からも復元できます）。</p>
+  <p class="note" style="margin:10px 0 0">「登録済み」は、いま登録されている項目（またはこのファイル内の前の項目）と同じ内容です。最初は選ばれていません。選んで追加すると重複して登録されます。「同じ名前あり」は、種別と名前が同じ項目がすでにある行です。初めは「上書きする」で、その項目の内容を置き換えます（お気に入り・使用回数は残り、直後なら元に戻せます）。「別件として追加」にすると、同じ名前の項目が2つになります。「全置換」は、選んだ項目だけでいまのデータを置き換えます（直後なら元に戻せます。設定画面からも復元できます）。</p>
   <div class="acts">
     <button class="btn" data-close>キャンセル</button>
     <button class="btn danger" id="impRep">選んだ項目で全置換</button>
-    <button class="btn go" id="impAdd">選んだ項目を追加</button>
+    <button class="btn go" id="impAdd">選んだ項目を取り込む</button>
   </div>
 </div></div>
 
@@ -754,6 +816,7 @@
   <h4>データ</h4>
   <p class="note" id="storeInfo"></p>
   <p class="note">データはこのアプリ内に自動保存されます。念のため、ときどきJSONで書き出して手元に残してください。</p>
+  <p class="note" id="bkInfo"></p>
   <div id="migBox" style="display:none;margin-bottom:10px">
     <p class="note" id="migInfo" style="margin-bottom:6px"></p>
     <button class="btn mini" id="migSave">移行前のデータをJSONで保存</button>
@@ -908,7 +971,8 @@ var store={
 var S={
   prompts:[], cats:DEFCATS.slice(), dict:{},
   comp:null,
-  cfg:{dup:false,step:0.05,naiFmt:"nai4",sep:", ",dedup:true,escp:true,auto:true,pxJoin:"comma",links:null,showGloss:true},
+  cfg:{dup:false,step:0.05,naiFmt:"nai4",sep:", ",dedup:true,escp:true,auto:true,pxJoin:"comma",links:null,showGloss:true,
+    fold:{sit:false,char:false,out:false},lastBackup:0,bkSnooze:0},
   f:{kind:"all",cats:[],tags:[],tagMode:"and",q:""},
   openF:{},
   sort:"new", editing:null, pending:null, sel:{}, undo:null, bak:null, mig:null, out:null
@@ -1065,6 +1129,8 @@ function normPrompt(p,i,seen){
     o.text=text;o.nl=!!p.nl;o.cat=o.cat||(kind==="face"?CAT_FACE:OTHER);o.name=o.name||text.slice(0,28);
   }
   if(kind==="sit"||kind==="char")o.text=summary(o);
+  // 取り込み側でカテゴリが空だったかどうか（保存や書き出しには含めない。上書きで既存のカテゴリを残す判断に使う）
+  if(!str(p.cat).trim())Object.defineProperty(o,"emptyCat",{value:true});
   seen[id]=1;
   return o;
 }
@@ -1107,6 +1173,8 @@ function normCfg(c){
   if(c.pxJoin==="comma"||c.pxJoin==="para")d.pxJoin=c.pxJoin;
   if(Array.isArray(c.links))d.links=normLinks(c.links);
   if(typeof c.showGloss==="boolean")d.showGloss=c.showGloss;
+  if(c.fold&&typeof c.fold==="object")["sit","char","out"].forEach(function(k){if(typeof c.fold[k]==="boolean")d.fold[k]=c.fold[k]});
+  ["lastBackup","bkSnooze"].forEach(function(k){var v=Number(c[k]);if(isFinite(v)&&v>0)d[k]=v});
 }
 function emptyWork(){return {from:null,name:"",base:[],neg:[],free:"",slots:[],slotFaces:[],slotSex:[],slotLines:[],slotBubbles:[],noOutfit:false}}
 function normWork(w){
@@ -1791,7 +1859,35 @@ function updateOut(){
   var wd=workDirty();
   $("#wDirty").style.display=wd?"":"none";
   renderSeq();
+  renderFold();
 }
+/* 組み立ての3ブロックの開閉：閉じているときは見出しと1行の要約だけを出す */
+function foldSum(k){
+  var w=W(),src=byId(w.from),a;
+  if(k==="sit")return (w.name||(src?src.name:"名前なし"))+" ／ ベース "+w.base.length+"・ネガ "+w.neg.length;
+  if(k==="char"){
+    if(!S.comp.chars.length)return "なし";
+    return S.comp.chars.map(function(c){return c?c.name:"未選択"}).join("、");
+  }
+  a=seqBoxes().length;
+  return a?a+" 欄":"なし";
+}
+function renderFold(){
+  var T={sit:"シチュエーション",char:"キャラ",out:"出力"};
+  ["sit","char","out"].forEach(function(k){
+    var f=!!S.cfg.fold[k],b=document.querySelector(".blk."+k),btn=b.querySelector(".bfold"),sm=$("#sum"+k.charAt(0).toUpperCase()+k.slice(1));
+    b.classList.toggle("folded",f);
+    btn.setAttribute("aria-expanded",f?"false":"true");
+    btn.textContent=f?"▸":"▾";
+    btn.setAttribute("aria-label",T[k]+"を"+(f?"開く":"閉じる"));
+    sm.textContent=f?foldSum(k):"";
+  });
+}
+$("#dock").addEventListener("click",function(e){
+  var b=e.target.closest("[data-fold]");if(!b)return;
+  var k=b.dataset.fold;S.cfg.fold[k]=!S.cfg.fold[k];
+  hideGloss();renderFold();save();
+});
 var SEXJA={girl:"女性",boy:"男性",other:"その他"};
 function sexOpts(v){
   return [["","指定なし"],["girl","女性（girl）"],["boy","男性（boy）"],["other","その他"]].map(function(o){
@@ -1882,7 +1978,7 @@ function renderComp(){
   updateOut();
   updateNav();
 }
-function render(){renderSide();renderList();renderComp();renderOpenBar()}
+function render(){renderSide();renderList();renderComp();renderOpenBar();renderBkNote()}
 
 /* ---------- 操作：組み立てへの読み込み ---------- */
 function confirmDiscard(what){return confirm(what+"の変更はまだ保存されていません。破棄してよろしいですか？")}
@@ -2059,11 +2155,26 @@ function openImport(info){
   // 登録済み（またはファイル内の前の項目）と同じ内容なら「登録済み」にして、最初は選ばない
   p.dup=p.rows.map(function(r){var k=dupKey(r),d=!!have[k];have[k]=1;return d});
   p.sel=p.dup.map(function(d){return !d});
+  // 種別と名前が同じ項目がすでにある行（内容まで同じ「登録済み」は除く）は、初めは「上書きする」
+  p.ow=p.rows.map(function(r,i){var e=p.dup[i]?null:sameNameEntry(r);return e?e.id:""});
+  p.owOn=p.ow.map(function(id){return !!id});
   p.ik="all";p.iq="";
   $("#impQ").value="";
   $("#impInfo").textContent=info;
   renderImp();
   $("#mImp").classList.add("on");
+}
+// 取り込む行と、種別・名前（前後の空白を除く）が同じ登録済みの項目。シチュエーションはフォルダ名も同じものを優先する
+function sameNameEntry(r){
+  var nm=str(r.name).trim(),hit=null,i,q;
+  for(i=0;i<S.prompts.length;i++){
+    q=S.prompts[i];
+    if(q.kind!==r.kind||str(q.name).trim()!==nm)continue;
+    if(r.kind!=="sit")return q;
+    if(str(q.folder).trim()===str(r.folder).trim())return q;
+    if(!hit)hit=q;
+  }
+  return hit;
 }
 function impVisible(){
   var p=S.pending,q=p.iq.trim().toLowerCase().split(/\s+/).filter(Boolean),out=[];
@@ -2087,22 +2198,32 @@ function renderImp(){
     var r=p.rows[i];
     return '<label class="impRow '+r.kind+(p.sel[i]?"":" off")+'"><input type="checkbox" data-ii="'+i+'"'+(p.sel[i]?" checked":"")+'>'+
       '<span class="im"><span class="in"><span class="kb '+r.kind+'">'+KLAB[r.kind]+'</span>'+esc(r.name)+
-      (r.nl?' <span class="nlb">文章</span>':'')+(p.dup[i]?' <span class="dupb">登録済み</span>':'')+
+      (r.nl?' <span class="nlb">文章</span>':'')+(p.dup[i]?' <span class="dupb">登録済み</span>':'')+(p.ow[i]?' <span class="owb">同じ名前あり</span>':'')+
       (r.kind==="sit"&&r.folder?' <span class="hint">フォルダ「'+esc(r.folder)+'」</span>':'')+'</span>'+
-      '<span class="it">'+esc(r.text)+'</span></span><span class="ic">'+esc(r.cat)+'</span></label>';
+      '<span class="it">'+esc(r.text)+'</span></span><span class="ic">'+esc(r.cat)+'</span>'+
+      (p.ow[i]?'<button type="button" class="btn mini owBtn" data-ow="'+i+'">'+(p.owOn[i]?"上書きする":"別件として追加")+'</button>':'')+'</label>';
   }).join(""):'<div class="empty" style="padding:28px 12px">条件に合う項目がありません。</div>';
   updateImpCount();
 }
+function owCount(p){var n=0;p.rows.forEach(function(r,i){if(p.sel[i]&&p.ow[i]&&p.owOn[i])n++});return n}
 function updateImpCount(){
-  var p=S.pending,n=p.sel.filter(Boolean).length;
-  $("#impCount").textContent=p.rows.length+" 件中 "+n+" 件を選択";
-  $("#impAdd").textContent="選んだ "+n+" 件を追加";
+  var p=S.pending,n=p.sel.filter(Boolean).length,no=owCount(p),any=p.ow.some(Boolean);
+  $("#impCount").textContent=p.rows.length+" 件中 "+n+" 件を選択"+(any?"（うち上書き "+no+" 件）":"");
+  $("#impAdd").textContent="選んだ "+n+" 件を取り込む";
   $("#impAdd").disabled=!n;$("#impRep").disabled=!n;
 }
 $("#impList").addEventListener("change",function(e){
   var c=e.target.closest("[data-ii]");if(!c)return;
   S.pending.sel[+c.dataset.ii]=c.checked;
   c.closest(".impRow").classList.toggle("off",!c.checked);
+  updateImpCount();
+});
+$("#impList").addEventListener("click",function(e){
+  var b=e.target.closest("[data-ow]");if(!b)return;
+  e.preventDefault();
+  var i=+b.dataset.ow,p=S.pending;
+  p.owOn[i]=!p.owOn[i];
+  b.textContent=p.owOn[i]?"上書きする":"別件として追加";
   updateImpCount();
 });
 $("#impKind").addEventListener("click",function(e){
@@ -2203,6 +2324,32 @@ function restoreSnap(s){
   syncCats();S.sel={};
 }
 function dupKey(p){return p.kind+"\u0000"+(p.kind==="sit"||p.kind==="char"?p.name+"\u0000":"")+p.text}
+// 同じ名前の登録済みの項目 ex を、取り込む側 r の内容で置き換える（id・お気に入り・使用回数・登録日は残す）
+function overwriteEntry(ex,r){
+  var wClean=ex.kind==="sit"&&W().from===ex.id&&!workDirty(),cClean=[];
+  if(ex.kind==="char")S.comp.chars.forEach(function(ch,j){if(ch&&ch.from===ex.id&&!charDirty(ch))cClean.push(j)});
+  if(!r.emptyCat)ex.cat=r.cat;
+  if(r.tags.length)ex.tags=r.tags.slice();
+  if(r.note)ex.note=r.note;
+  if(ex.kind==="sit"){
+    var f=str(r.folder).trim();
+    if(f){ex.order=f===ex.folder?(r.order||ex.order||0):(r.order||nextOrder(f));ex.folder=f}
+    ex.base=cloneChips(r.base);ex.neg=cloneChips(r.neg);
+    ex.slots=(r.slots||[]).map(cloneChips);ex.slotFaces=(r.slotFaces||[]).map(cloneChips);
+    ex.slotSex=(r.slotSex||[]).slice();ex.slotLines=(r.slotLines||[]).slice();ex.slotBubbles=(r.slotBubbles||[]).slice();
+    ex.noOutfit=!!r.noOutfit;
+    ex.text=summary(ex);
+  }else if(ex.kind==="char"){
+    ex.sex=r.sex;ex.look=cloneChips(r.look);ex.outfit=cloneChips(r.outfit);ex.text=summary(ex);
+  }else{
+    ex.text=r.text;ex.nl=!!r.nl;
+    eachChip(function(ch){if(ch.pid===ex.id){ch.name=ex.name;ch.text=ex.text;ch.nl=ex.nl}});
+    S.prompts.forEach(function(q){if(isBig(q.kind))q.text=summary(q)});
+  }
+  // 組み立てに読み込み中で、変更していない場合は登録内容に合わせて読み直す（変更中なら組み立ては変えない）
+  if(wClean){S.comp.work=workFrom(ex);applyLines(ex);ensureSlots()}
+  cClean.forEach(function(j){S.comp.chars[j]=charFrom(ex)});
+}
 function applyImport(replace){
   var p=S.pending;if(!p)return;
   var rows=p.rows.filter(function(r,i){return p.sel[i]});
@@ -2222,17 +2369,28 @@ function applyImport(replace){
     setUndo("全置換を取り消しました",function(){restoreSnap(snap)});
     toast(S.prompts.length+" 件に置き換えました"+glossNote(gl),"元に戻す");
   }else{
-    // 選んだ項目はすべて追加する（登録済みでも、選んだ場合は重複して登録する）
-    // 新しいIDを振り、ファイル内のシチュエーション・キャラのチップが指す元の項目も付け替える
-    var map={},nd=0;
-    rows.forEach(function(r){if(p.dup[p.rows.indexOf(r)])nd++;var old=r.id;r.id=uid();map[old]=r.id;S.prompts.push(r)});
+    // 選んだ項目はすべて取り込む（登録済みでも、選んだ場合は重複して登録する）
+    // 「同じ名前あり」で「上書きする」の行は、その項目の内容を置き換える。それ以外は新しいIDを振って追加する
+    // ファイル内のシチュエーション・キャラのチップが指す元の項目も付け替える
+    var map={},nd=0,nOw=0,tg=[],snapA=null;
+    var useOw=function(i){return !!(p.ow[i]&&p.owOn[i]&&byId(p.ow[i]))};
+    if(p.rows.some(function(r,i){return p.sel[i]&&useOw(i)}))snapA=snapshot();
     rows.forEach(function(r){
+      var i=p.rows.indexOf(r),ex=useOw(i)?byId(p.ow[i]):null,old=r.id;
+      if(p.dup[i])nd++;
+      if(ex){map[old]=ex.id;overwriteEntry(ex,r);tg.push(ex);nOw++}
+      else{r.id=uid();map[old]=r.id;S.prompts.push(r);tg.push(r)}
+    });
+    tg.forEach(function(r){
       var fix=function(a){(a||[]).forEach(function(c){if(c.pid)c.pid=map[c.pid]||(byId(c.pid)?c.pid:null)})};
       if(r.kind==="sit"){fix(r.base);fix(r.neg);(r.slots||[]).forEach(fix);(r.slotFaces||[]).forEach(fix)}
       if(r.kind==="char"){fix(r.look);fix(r.outfit)}
     });
     gl=p.dict&&p.dict.length?dictMerge(p.dict,false):null;
-    toast(rows.length+" 件追加しました"+(nd?"（うち登録済みと同じ内容 "+nd+" 件）":"")+glossNote(gl));
+    if(nOw){
+      setUndo("取り込みを取り消しました",function(){restoreSnap(snapA)});
+      toast(rows.length+" 件を取り込みました（うち上書き "+nOw+" 件）"+(nd?"（うち登録済みと同じ内容 "+nd+" 件）":"")+glossNote(gl),"元に戻す");
+    }else toast(rows.length+" 件追加しました"+(nd?"（うち登録済みと同じ内容 "+nd+" 件）":"")+glossNote(gl));
   }
   syncCats();
   S.pending=null;$("#mImp").classList.remove("on");render();save();
@@ -2286,6 +2444,7 @@ function expo(kind){
   if(kind==="muse"){copy(MUSE_REQ,"Muse への依頼文をコピーしました");return}
   if(kind==="json"){
     dl("prompt-library-"+stamp()+".json",backupJSON(S),"application/json");
+    S.cfg.lastBackup=Date.now();save();renderBkInfo();renderBkNote();
     toast("JSONを保存しました");return;
   }
   if(kind!=="tpl"&&!S.prompts.length){toast("書き出すデータがありません");return}
@@ -2863,10 +3022,22 @@ function showKindFields(k){
   $("#gHint").style.display=(k==="sit"||k==="char")?"":"none";
   $("#edTitle").textContent=(S.editing?"編集：":"追加：")+{pos:"プロンプト",neg:"プロンプト",face:"表情",sit:"シチュエーション",char:"キャラ"}[k];
 }
-function eSlotHTML(r,i){
-  return '<div class="eslot" data-i="'+i+'"><div class="eslotHead"><span class="sn">キャラ'+(i+1)+'</span>'+
-    '<span class="hint">想定の性別</span><select class="fld" data-sx>'+sexOpts(r.sex)+'</select>'+
-    '<span class="grow"></span><button type="button" class="ico" data-rm title="この枠を削除">×</button></div>'+
+// キャラ枠の1行の要約（閉じているときに出す）。入っているものだけ
+function eSlotSum(r){
+  var a=[],x=[];
+  if(r.sex)x.push("想定："+SEXJA[r.sex]);
+  var nt=textToChips(r.text).length,nf=textToChips(r.face).length;
+  if(nt)a.push("状態 "+nt);
+  if(nf)a.push("表情 "+nf);
+  if(str(r.line).trim())a.push("セリフあり");
+  if(a.length)x.push(a.join("・"));
+  return x.join(" ／ ")||"（空）";
+}
+function eSlotHTML(r,i,open){
+  return '<div class="eslot'+(open?"":" shut")+'" data-i="'+i+'"><div class="eslotHead">'+
+    '<button type="button" class="eslotTog" data-tog aria-expanded="'+(open?"true":"false")+'" aria-label="キャラ'+(i+1)+'を開閉"><span class="tg">'+(open?"▾":"▸")+'</span><span class="sn">キャラ'+(i+1)+'</span><span class="esum">'+esc(eSlotSum(r))+'</span></button>'+
+    '<span class="eslotSx"><span class="hint">想定の性別</span><select class="fld" data-sx>'+sexOpts(r.sex)+'</select></span>'+
+    '<button type="button" class="ico" data-rm title="この枠を削除">×</button></div>'+
     '<div class="eslotLine"><span class="hint">状態</span></div>'+
     '<textarea class="fld" data-tx placeholder="ポーズ・状態・動作タグ（例：wet hair, holding umbrella, source#hug）">'+esc(r.text)+'</textarea>'+
     '<div class="eslotLine"><span class="hint">表情</span></div>'+
@@ -2874,13 +3045,16 @@ function eSlotHTML(r,i){
     '<div class="eslotLine"><span class="hint">セリフ</span><label class="chk2" style="margin:0"><input type="checkbox" data-bb'+(r.bubble!==false?" checked":"")+'> 吹き出しにする</label></div>'+
     '<textarea class="fld line" data-ln rows="2" placeholder="セリフ（例：おはよう！）">'+esc(r.line||"")+'</textarea></div>';
 }
-function readESlots(){
-  return Array.prototype.map.call(document.querySelectorAll("#eSlots .eslot"),function(el){
-    return {sex:el.querySelector("[data-sx]").value,text:el.querySelector("[data-tx]").value,face:el.querySelector("[data-fc]").value,
-      line:el.querySelector("[data-ln]").value,bubble:el.querySelector("[data-bb]").checked};
-  });
+// 閉じた枠も、要素は消さずに隠しているだけなので、値はそのまま読める
+function readESlot(el){
+  return {sex:el.querySelector("[data-sx]").value,text:el.querySelector("[data-tx]").value,face:el.querySelector("[data-fc]").value,
+    line:el.querySelector("[data-ln]").value,bubble:el.querySelector("[data-bb]").checked,open:!el.classList.contains("shut")};
 }
-function renderESlots(rows){$("#eSlots").innerHTML=rows.map(eSlotHTML).join("")}
+function readESlots(){
+  return Array.prototype.map.call(document.querySelectorAll("#eSlots .eslot"),readESlot);
+}
+// 枠が3つ以上なら、すべて閉じた状態で出す（open が決まっている枠はそのまま）
+function renderESlots(rows){$("#eSlots").innerHTML=rows.map(function(r,i){return eSlotHTML(r,i,r.open!==undefined?r.open:rows.length<3)}).join("")}
 function eSlotsFrom(p){
   if(!p||p.kind!=="sit")return [];
   var sp=slotPair(p);
@@ -2888,12 +3062,68 @@ function eSlotsFrom(p){
 }
 $("#eAddSlot").addEventListener("click",function(){
   var rows=readESlots();if(rows.length>=MAXCH)return;
-  rows.push({sex:"girl",text:"",face:"",line:"",bubble:true});renderESlots(rows);
+  rows.push({sex:"girl",text:"",face:"",line:"",bubble:true,open:true});renderESlots(rows);
   var t=document.querySelectorAll("#eSlots [data-tx]");t[t.length-1].focus();
 });
 $("#eSlots").addEventListener("click",function(e){
+  var t=e.target.closest("[data-tog]");
+  if(t){
+    var el=t.closest(".eslot"),open=el.classList.contains("shut");
+    el.classList.toggle("shut",!open);
+    t.setAttribute("aria-expanded",open?"true":"false");
+    t.querySelector(".tg").textContent=open?"▾":"▸";
+    t.querySelector(".esum").textContent=eSlotSum(readESlot(el));
+    return;
+  }
   var b=e.target.closest("[data-rm]");if(!b)return;
   var rows=readESlots();rows.splice(+b.closest(".eslot").dataset.i,1);renderESlots(rows);
+});
+/* 「Muse 用にコピー」：いま登録されている内容を、Muse に直してもらうための文と JSON にして渡す */
+function museChips(a){
+  return (a||[]).map(function(c){
+    var o={text:c.text},g=glossInfo(c.text,c.nl);
+    if(g.full)o.ja=g.s;
+    if(c.w!==1)o.w=c.w;
+    if(c.nl)o.nl=true;
+    return o;
+  });
+}
+function museEntry(p){
+  var o={kind:p.kind,name:p.name},sp;
+  if(p.cat)o.cat=p.cat;
+  if(p.tags&&p.tags.length)o.tags=p.tags.slice();
+  if(p.note)o.note=p.note;
+  if(isTxt(p.kind)){
+    var g=glossInfo(p.text,p.nl);
+    o.text=p.text;
+    if(p.nl)o.nl=true;
+    if(g.any)o.ja=g.s;
+  }else if(p.kind==="sit"){
+    sp=slotPair(p);
+    if(p.folder){o.folder=p.folder;o.order=p.order||0}
+    o.base=museChips(p.base);o.neg=museChips(p.neg);
+    if(sp.slots.length){
+      o.slots=sp.slots.map(museChips);o.slotFaces=sp.slotFaces.map(museChips);o.slotSex=sp.slotSex.slice();o.slotLines=sp.slotLines.slice();
+      if(sp.slotBubbles.some(function(v){return !v}))o.slotBubbles=sp.slotBubbles.slice();
+    }
+    if(p.noOutfit)o.noOutfit=true;
+  }else{
+    o.sex=p.sex;o.look=museChips(p.look);o.outfit=museChips(p.outfit);
+  }
+  return o;
+}
+function museText(p){
+  return ['次の JSON は、画像生成AI用プロンプトの登録データです。',
+    '下の「直したい内容」に沿って直し、同じ形の JSON だけを返してください。',
+    '"name" は変えないでください（同じ名前の項目を上書きするためです）。',
+    'タグは1つずつ {"text":"英語のタグ","ja":"日本語の訳"} に分けてください。','',
+    '直したい内容：（ここに書いてください）','',
+    JSON.stringify({v:3,prompts:[museEntry(p)]},null,1)].join("\n");
+}
+$("#eClose").addEventListener("click",function(){$("#mEdit").classList.remove("on")});
+$("#eMuse").addEventListener("click",function(){
+  var p=S.editing;if(!p||!byId(p.id))return;
+  copy(museText(p),"Muse 用にコピーしました。Muse に貼って、直したい内容を伝えてください");
 });
 function openEdit(p){
   S.editing=p||null;
@@ -2917,6 +3147,8 @@ function openEdit(p){
   $("#eNote").value=p?p.note:"";
   showKindFields(k);
   $("#eConv").classList.remove("on");
+  $("#eMuse").style.display=p?"":"none";
+  $("#edBody").scrollTop=0;
   $("#mEdit").classList.add("on");
   setTimeout(function(){$("#eName").focus()},30);
 }
@@ -3271,6 +3503,30 @@ function renderBak(){
   if(mg)$("#migInfo").textContent="新しい形式（シチュエーション・キャラを一覧の項目にする形）へ移行する前のデータ（"+
     new Date(S.mig.at).toLocaleString("ja-JP")+"）を残しています。このJSONを「取り込み」→「全置換」すると、移行した直後の状態に戻せます。";
 }
+/* バックアップの案内：最後に取った日を覚えて、設定に出し、忘れていそうなときは画面上部に帯を出す */
+function dayDiff(t){
+  var a=new Date(t),b=new Date();
+  return Math.round((Date.UTC(b.getFullYear(),b.getMonth(),b.getDate())-Date.UTC(a.getFullYear(),a.getMonth(),a.getDate()))/86400000);
+}
+function renderBkInfo(){
+  var t=S.cfg.lastBackup,d=t?dayDiff(t):0,a=new Date(t);
+  $("#bkInfo").textContent="最後のバックアップ："+(t?(d<=0?"今日":d+" 日前")+"（"+a.getFullYear()+"/"+(a.getMonth()+1)+"/"+a.getDate()+"）":"まだ取っていません");
+}
+function renderBkNote(){
+  var el=$("#bkNote"),n=S.prompts.length,t=S.cfg.lastBackup,d=t?dayDiff(t):0,show;
+  show=t?(d>=14&&n>=1):n>=10;
+  if(show&&S.cfg.bkSnooze&&Date.now()-S.cfg.bkSnooze<3*86400000)show=false;
+  if(!show){el.style.display="none";return}
+  el.innerHTML='<span class="bkTx">'+(t?"最後のバックアップから "+d+" 日たっています。":"まだバックアップを取っていません。")+
+    "データはこの端末の中だけにあります。</span>"+
+    '<span class="bkBtns"><button class="btn mini" id="bkNow">今すぐ保存</button><button class="btn mini" id="bkLater">あとで</button></span>';
+  el.style.display="flex";
+}
+$("#bkNote").addEventListener("click",function(e){
+  var b=e.target.closest("button");if(!b)return;
+  if(b.id==="bkNow")expo("json");
+  else if(b.id==="bkLater"){S.cfg.bkSnooze=Date.now();save();renderBkNote()}
+});
 function renderLibInfo(){
   $("#libInfo").textContent="Excel機能："+(window.XLSX?"SheetJS v"+window.XLSX.version:"未読み込み（取り込み・書き出し時に読み込みます）");
 }
@@ -3295,7 +3551,7 @@ $("#bSet").addEventListener("click",function(){
   $("#sAuto").checked=S.cfg.auto;$("#sPxJoin").value=S.cfg.pxJoin;$("#sLinks").value=linksText();
   $("#sStep").value=String(S.cfg.step);
   $("#sFmt").value=S.cfg.naiFmt;$("#sSep").value=(S.cfg.sep===",\n")?",\\n":S.cfg.sep;
-  renderCatMgr();renderBak();renderLibInfo();renderDictInfo();
+  renderCatMgr();renderBak();renderBkInfo();renderLibInfo();renderDictInfo();
   $("#mSet").classList.add("on");
 });
 $("#sDup").addEventListener("change",function(){S.cfg.dup=this.checked;save()});
