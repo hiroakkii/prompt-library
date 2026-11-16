@@ -617,7 +617,7 @@
   </div>
   <div class="f"><label>コピーして開く先（1行に「名前 | URL」）</label>
     <textarea class="fld" id="sLinks" rows="3" style="font-family:var(--mono);font-size:13px;min-height:72px"></textarea>
-    <div class="hint">組み立てタブの出力欄に「コピーして〇〇を開く」ボタンが並びます。押すと、すべての出力を見出し付きでまとめてコピーしてから、そのURLを開きます。スマホでは、アプリがユニバーサルリンクに対応していればアプリが開きます。</div></div>
+    <div class="hint">組み立てタブの出力欄に「コピーして〇〇を開く」ボタンが並びます。押すと、すべての出力を見出し付きでまとめてコピーしてから、そのURLを開きます。スマホでは、アプリがユニバーサルリンクに対応していればアプリが開きます（アプリが受け付けるページのURLにしてください。Muse は <code>https://muse.ai/chat</code>）。どうしてもアプリが開かない場合は、iPhone の「ショートカット」で「アプリを開く」ショートカットを作り、<code>shortcuts://run-shortcut?name=ショートカット名</code> を登録すると確実に開けます。</div></div>
   <div class="f"><label>PixAI でのベースとキャラのつなぎ方</label><select class="fld" id="sPxJoin">
     <option value="comma">区切り文字でつなぐ（タグ向け）</option>
     <option value="para">改行で段落に分ける（文章向け・Tsubaki.3 など）</option></select></div>
@@ -939,7 +939,10 @@ function normCats(arr){
   return out;
 }
 /* コピーして開く先 */
-var DEFLINKS=[{name:"NovelAI",url:"https://novelai.net/image"},{name:"PixAI",url:"https://pixai.art/"},{name:"Muse",url:"https://muse.ai/"}];
+var DEFLINKS=[{name:"NovelAI",url:"https://novelai.net/image"},{name:"PixAI",url:"https://pixai.art/"},{name:"Muse",url:"https://muse.ai/chat"}];
+// Muse アプリのユニバーサルリンクはトップページ（https://muse.ai/）を受け付けず、/chat などのページだけが対象。
+// 以前の初期値（トップページ）のまま保存されている場合は /chat に置き換える
+function fixLinkUrl(u){return /^https:\/\/(www\.)?muse\.ai\/?$/i.test(u)?"https://muse.ai/chat":u}
 // 開けるのは http(s) と、アプリ独自のURL（例：appname://）。javascript: などは使わない
 function safeUrl(u){
   u=str(u).trim();
@@ -948,7 +951,7 @@ function safeUrl(u){
   return "";
 }
 function normLinks(a){
-  return (Array.isArray(a)?a:[]).map(function(x){return x&&{name:str(x.name).trim().slice(0,30),url:safeUrl(x.url)}})
+  return (Array.isArray(a)?a:[]).map(function(x){return x&&{name:str(x.name).trim().slice(0,30),url:fixLinkUrl(safeUrl(x.url))}})
     .filter(function(x){return x&&x.name&&x.url}).slice(0,10);
 }
 function links(){return S.cfg.links||DEFLINKS}
