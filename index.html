@@ -131,6 +131,7 @@
   .chk.on{background:var(--pos);border-color:var(--pos);color:#fff}
   .ico{width:30px;height:30px;border-radius:7px;color:var(--ink3);display:grid;place-items:center;font-size:15px;flex:none}
   .ico:hover:not(:disabled){background:var(--wash2); color:var(--ink)}
+  .rowMore,.moreBtn,.kindBar,.fab,.gpBack,.bs{display:none}
   .star{color:#B7C1CF; font-size:15px}
   .star.on{color:var(--fav)}
   .uses{font-size:12px; color:var(--ink3); font-variant-numeric:tabular-nums; min-width:22px; text-align:right}
@@ -151,11 +152,11 @@
   .sect.sp{margin-top:22px}
   .kinds{display:flex; gap:6px}
   .kinds .btn{flex:1; padding:10px 4px; font-size:14px}
-  .kinds .btn[data-kind="pos"].on{border-color:var(--pos); color:var(--pos-dk); background:var(--pos-bg)}
-  .kinds .btn[data-kind="neg"].on{border-color:var(--neg); color:var(--neg); background:var(--neg-bg)}
-  .kinds .btn[data-kind="sit"].on{border-color:var(--sit); color:var(--sit); background:var(--sit-bg)}
-  .kinds .btn[data-kind="face"].on{border-color:var(--face); color:var(--face); background:var(--face-bg)}
-  .kinds .btn[data-kind="char"].on{border-color:var(--char); color:var(--char); background:var(--char-bg)}
+  .kinds .btn[data-kind="pos"].on,.kinds .btn[data-kb="pos"].on{border-color:var(--pos); color:var(--pos-dk); background:var(--pos-bg)}
+  .kinds .btn[data-kind="neg"].on,.kinds .btn[data-kb="neg"].on{border-color:var(--neg); color:var(--neg); background:var(--neg-bg)}
+  .kinds .btn[data-kind="sit"].on,.kinds .btn[data-kb="sit"].on{border-color:var(--sit); color:var(--sit); background:var(--sit-bg)}
+  .kinds .btn[data-kind="face"].on,.kinds .btn[data-kb="face"].on{border-color:var(--face); color:var(--face); background:var(--face-bg)}
+  .kinds .btn[data-kind="char"].on,.kinds .btn[data-kb="char"].on{border-color:var(--char); color:var(--char); background:var(--char-bg)}
   .seg{display:flex; gap:0; margin-left:auto}
   .seg .btn{border-radius:0; padding:4px 11px; font-size:12.5px}
   .seg .btn:first-child{border-radius:var(--r) 0 0 var(--r)}
@@ -216,7 +217,7 @@
   .chip.n .w{color:var(--neg)}
   .wbtn{width:22px;height:24px;border-radius:5px;color:var(--ink3);font-size:14px;line-height:1}
   .wbtn:hover{background:rgba(28,38,51,.08); color:var(--ink)}
-  .xbtn{width:24px;height:24px;border-radius:5px;color:var(--ink3);font-size:14px;margin-left:1px}
+  .xbtn{width:24px;height:24px;border-radius:5px;color:var(--ink3);font-size:14px;margin-left:1px;position:relative}
   .xbtn:hover{background:var(--neg-bg); color:var(--neg)}
   .slot{display:flex; align-items:center; gap:8px; padding:7px 8px; border-radius:var(--r); border:1px solid var(--rule);
         margin-bottom:6px; cursor:pointer; background:var(--sheet)}
@@ -322,7 +323,8 @@
   .toast{position:fixed; left:50%; bottom:22px; transform:translateX(-50%); background:var(--ink); color:#fff;
          border-radius:999px; padding:9px 20px; font-size:13.5px; box-shadow:0 8px 24px rgba(28,38,51,.25);
          opacity:0; pointer-events:none; transition:opacity .2s; z-index:60; max-width:calc(100% - 32px)}
-  .toast.on{opacity:1; pointer-events:auto}
+  .toast.on{opacity:1}
+  .toast.on .undo{pointer-events:auto} /* トーストの下のチップを押せるように、反応するのは「元に戻す」だけ */
   .toast .undo{margin-left:14px; color:#B9C2FF; font-size:13.5px; font-weight:700; text-decoration:underline}
   .menu{position:absolute; background:var(--sheet); border:1px solid var(--rule); border-radius:10px;
         padding:5px; min-width:210px; z-index:50; display:none; box-shadow:0 12px 32px rgba(28,38,51,.18)}
@@ -331,9 +333,18 @@
                font-size:14px; color:var(--ink)}
   .menu button:hover{background:var(--wash)}
   .menu hr{border:0; border-top:1px solid var(--rule); margin:5px 0}
-  .glossPop{position:fixed; width:min(320px,calc(100vw - 16px)); padding:10px}
+  .glossPop{position:fixed; width:min(340px,calc(100vw - 16px)); padding:12px; max-height:calc(100vh - 16px); overflow-y:auto}
+  .gpHead{display:flex; align-items:flex-start; gap:8px; margin-bottom:10px}
+  .gpHead>div{flex:1; min-width:0}
+  .gpTitle{font-size:15px; font-weight:700; line-height:1.45; overflow-wrap:anywhere}
+  .gpFull{font:400 11.5px/1.5 var(--mono); color:var(--ink3); overflow-wrap:anywhere; margin-top:2px}
+  .glossPop .gpClose{display:none}
+  .gpW{display:flex; align-items:center; gap:6px; margin-bottom:12px}
+  .glossPop .gpW .btn{display:flex; align-items:center; justify-content:center; width:auto; min-width:44px; height:44px; padding:0 10px; font-size:20px; line-height:1}
+  .glossPop .gpW .gpRs{font-size:13px; padding:0 12px}
+  .gpWv{flex:1; min-width:3.2em; text-align:center; font:700 17px/1 var(--mono); color:var(--ink)}
+  .glossPop .gpRm{display:block; width:100%; height:44px; margin-top:12px; text-align:center}
   .gpRow{margin-bottom:10px}
-  .gpRow:last-child{margin-bottom:0}
   .gpEn{font:400 12.5px/1.5 var(--mono); color:var(--ink2); overflow-wrap:anywhere; margin-bottom:4px}
   .gpLinks{display:flex; gap:6px; flex-wrap:wrap; margin-top:6px}
   .glossPop a.btn{text-decoration:none; display:inline-flex; align-items:center; font-size:12.5px; padding:6px 10px}
@@ -342,6 +353,27 @@
   .dRow:first-child{border-top:0}
   .dRow .dEn{flex:1 1 38%; min-width:0; font:400 12.5px/1.5 var(--mono); color:var(--ink2); overflow-wrap:anywhere}
   .dRow .fld{flex:1 1 52%; min-width:0; width:auto; padding:6px 9px}
+  .kinds.kindBar{display:none}
+  .menu .mh{font-size:12px; color:var(--ink3); padding:4px 10px 6px}
+  .menu button.dng{color:var(--neg)}
+  #moreMenu,#rowMenu{min-width:230px; position:fixed}
+  #moreMenu button,#rowMenu button{min-height:44px; display:flex; align-items:center; gap:6px}
+  #moreMenu .mck{width:1.2em; flex:none; color:var(--pos-dk); font-weight:700}
+  .tgtbar .fx{color:var(--ink3)}
+  /* 順番コピーのバー（組み立ての下端に固定） */
+  .seq{display:none; flex:none; background:var(--sheet); border-top:1px solid var(--rule); box-shadow:0 -4px 14px rgba(28,38,51,.08); padding:5px 12px 6px}
+  .seq.on{display:block}
+  .seqList{display:flex; gap:6px; overflow-x:auto; scrollbar-width:none; margin-bottom:4px}
+  .seqList::-webkit-scrollbar{display:none}
+  .seqList button{flex:none; display:flex; align-items:center; gap:4px; padding:0 11px; min-height:26px; border:1px solid var(--rule2); border-radius:999px;
+                  background:var(--wash); font-size:13px; font-weight:500; color:var(--ink); white-space:nowrap}
+  .seqList button small{font-size:10.5px; color:var(--char); font-weight:400}
+  .seqList button.done{opacity:.55; color:var(--ink3)}
+  .seqList button i{font-style:normal; color:var(--sit); font-weight:700}
+  .seqAct{display:flex; gap:8px}
+  .seqAct .btn{height:44px; font-size:14.5px}
+  .seqAct .go{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis}
+  body:has(#v3.on .seq.on) .toast{bottom:88px}
 
   /* スマホ：タブを画面下に置いて親指で切り替える */
   @media (max-width:720px){
@@ -351,10 +383,38 @@
            box-shadow:0 -4px 16px rgba(28,38,51,.06)}
     .mtab{padding:9px 4px; font-size:13.5px; gap:5px}
     .main{order:2}
-    .tools{flex-wrap:wrap}
-    .search{flex:1 1 100%}
-    #sort{flex:1; width:auto!important}
+    .barR,#sort,#bSelAll{display:none}
+    .list{padding-bottom:88px}
+    .tools{flex-wrap:wrap; padding:10px 16px 8px}
+    .search{flex:1 1 0; order:1; min-height:44px}
+    .moreBtn{display:grid; place-items:center; order:1; flex:none; width:44px; height:44px; padding:0; font-size:20px; line-height:1}
+    .kinds.kindBar{display:flex; order:2; flex:1 1 100%; min-width:0; overflow-x:auto; scrollbar-width:none; -webkit-overflow-scrolling:touch}
+    .kindBar::-webkit-scrollbar{display:none}
+    .kinds.kindBar .btn{flex:none; min-height:40px; padding:0 16px; font-size:14px}
+    #bDelF{display:none}
+    .tgtbar{padding:4px 6px 4px 12px}
+    .tgtbar .btn{min-height:36px}
+    .tgtbar .fx,.tgtbar .bl{display:none}
+    .tgtbar .bs{display:inline}
     .rcat,.uses{display:none}
+    .ract .ico[data-a="fav"],.ract .ico[data-a="edit"],.ract .ico[data-a="del"],.ract .ico[data-a="fup"],.ract .ico[data-a="fdn"]{display:none}
+    .ico.rowMore{display:grid; width:44px; height:44px; font-size:20px; line-height:1}
+    .fab{display:grid; place-items:center; position:fixed; z-index:30; right:16px; bottom:calc(var(--tabh) + 16px + env(safe-area-inset-bottom));
+         width:56px; height:56px; border-radius:50%; background:var(--pos); color:#fff; font-size:30px; line-height:1;
+         box-shadow:0 6px 18px rgba(28,38,51,.3)}
+    .fab:active{background:var(--pos-dk)}
+    body:has(.modal.on) .fab,body:has(#glossPop.on) .fab{display:none}
+    body:has(#v1.on) .toast{bottom:calc(var(--tabh) + 84px + env(safe-area-inset-bottom))}
+    body:has(#glossPop.on) .toast{bottom:auto!important; top:calc(12px + env(safe-area-inset-top))} /* シートの中身に重ねない（組み立てタブの位置指定より優先） */
+    body:has(#v3.on .seq.on) .toast{bottom:calc(var(--tabh) + 88px + env(safe-area-inset-bottom))}
+    .xbtn::before{content:""; position:absolute; left:-4px; right:-4px; top:-4px; bottom:-4px}
+    .wbtn{display:none}
+    .gpBack.on{display:block; position:fixed; inset:0; z-index:49; background:rgba(28,38,51,.25)}
+    .glossPop{left:0!important; right:0; top:auto!important; bottom:0; width:auto; max-height:70vh; max-height:70dvh; overflow-y:auto;
+              border-radius:14px 14px 0 0; border-width:1px 0 0; padding:0 14px calc(14px + env(safe-area-inset-bottom));
+              box-shadow:0 -8px 30px rgba(28,38,51,.2)}
+    .gpHead{position:sticky; top:0; z-index:1; background:var(--sheet); padding:10px 0 8px; margin-bottom:4px}
+    .glossPop .gpClose{display:block; flex:none; width:44px; height:44px; padding:0; font-size:12.5px; text-align:center}
     .row{gap:10px; padding:10px 8px 10px 16px}
     .ract{gap:0}
     .ico{width:32px; height:32px}
@@ -376,6 +436,7 @@
   }
   /* PC：左に一覧、右に組み立てを常に並べる */
   @media (min-width:1100px){
+    body:has(.seq.on) .toast{bottom:88px}
     .main{display:grid; grid-template-columns:minmax(0,1fr) minmax(460px,44%)}
     .main>.view{grid-row:1; grid-column:1; min-width:0}
     .main>#v3{display:flex; flex-direction:column; grid-column:2; border-left:1px solid var(--rule); background:#E8EDF4}
@@ -406,6 +467,7 @@
     <div class="barR">
       <button class="btn" id="bNew">新規追加</button>
       <button class="btn" id="bImp">取り込み</button>
+      <button class="btn" id="bPaste">貼り付けて取り込む</button>
       <button class="btn" id="bExp">書き出し</button>
       <button class="btn" id="bSet">設定</button>
       <span class="stat" id="stat"></span>
@@ -419,6 +481,15 @@
         <option value="name">表示名順</option>
       </select>
       <button class="btn" id="bSelAll">すべて選択</button>
+      <button class="btn moreBtn" id="bMore" aria-haspopup="true" aria-label="メニュー">⋯</button>
+      <div class="kinds kindBar" id="kindBar">
+        <button class="btn kbtn on" data-kb="all">すべて</button>
+        <button class="btn kbtn" data-kb="pos">ポジ</button>
+        <button class="btn kbtn" data-kb="neg">ネガ</button>
+        <button class="btn kbtn" data-kb="face">表情</button>
+        <button class="btn kbtn" data-kb="sit">シチュ</button>
+        <button class="btn kbtn" data-kb="char">キャラ</button>
+      </div>
       <button class="btn danger" id="bDelF" style="display:none">表示中を削除</button>
     </div>
     <div class="fsum" id="fsum"></div>
@@ -427,6 +498,7 @@
     <div class="list" id="list">
       <div id="rows"></div>
     </div>
+    <button class="fab" id="fabNew" aria-label="新規追加">＋</button>
   </section>
 
   <section class="view" id="v2">
@@ -531,6 +603,7 @@
       <div id="outBox"></div>
     </div>
   </div>
+  <div class="seq" id="seq"></div>
   </section>
   </main>
 </div>
@@ -620,6 +693,17 @@
   </div>
 </div></div>
 
+<div class="modal" id="mPaste"><div class="card wide">
+  <h3>貼り付けて取り込む</h3>
+  <p class="note">Muse の返答（JSON）を貼り付けてください。前後の説明文や <code>```json</code> の囲みが付いていても読み取れます。</p>
+  <textarea class="fld" id="pasteTx" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="Muse の返答（JSON）" style="height:40vh;min-height:140px;font-family:var(--mono);font-size:13px;resize:vertical"></textarea>
+  <div class="acts">
+    <button class="btn" id="pasteClip" style="display:none;margin-right:auto">クリップボードから貼り付け</button>
+    <button class="btn" data-close>キャンセル</button>
+    <button class="btn go" id="pasteGo">読み取る</button>
+  </div>
+</div></div>
+
 <div class="modal" id="mSet"><div class="card">
   <h3>設定</h3>
   <h4>出力</h4>
@@ -696,7 +780,10 @@
   <div class="acts"><button class="btn go" data-close>閉じる</button></div>
 </div></div>
 
-<div class="menu glossPop" id="glossPop"></div>
+<div class="gpBack" id="gpBack"></div>
+<div class="menu glossPop" id="glossPop" role="dialog" aria-label="チップの操作"></div>
+<div class="menu" id="moreMenu"></div>
+<div class="menu" id="rowMenu"></div>
 <div class="menu sceneMenu" id="sceneMenu"></div>
 <div class="menu facePick" id="facePick">
   <input class="fld" id="fpQ" placeholder="表情プロンプトを検索">
@@ -1263,9 +1350,9 @@ function compose(){
   var charLabel=function(x){return "キャラ"+(x.i+1)+(x.c?"："+x.c.name:"（未選択）")};
   var boxes=[];
   if(svc==="nai"){
-    boxes.push({label:"ベースプロンプト",a:assemble(base,fmt,{drop:drop})});
-    cs.forEach(function(x){boxes.push({label:charLabel(x),a:assemble(charItems(x),fmt,{drop:drop}),sm:true,warn:!x.c})});
-    boxes.push({label:"除外したい要素（ネガティブ）",a:assemble(w.neg,fmt),neg:true,sm:true});
+    boxes.push({label:"ベースプロンプト",a:assemble(base,fmt,{drop:drop}),key:"base",nm:"ベース"});
+    cs.forEach(function(x){boxes.push({label:charLabel(x),a:assemble(charItems(x),fmt,{drop:drop}),sm:true,warn:!x.c,key:"c"+x.i,nm:"キャラ"+(x.i+1),unsel:!x.c})});
+    boxes.push({label:"除外したい要素（ネガティブ）",a:assemble(w.neg,fmt),neg:true,sm:true,key:"neg",nm:"ネガ"});
   }else{
     // ベース → キャラ1 → キャラ2 … の順に1本にする（重複判定は全体で共有）
     var seen={},segs=[assemble(base,fmt,{drop:drop,seen:seen})];
@@ -1275,8 +1362,8 @@ function compose(){
     segs=segs.filter(function(a){return a.out});
     var jn=S.cfg.pxJoin==="para"?"\n\n":S.cfg.sep;
     boxes.push({label:"プロンプト",a:{out:joinParts(segs.map(function(a){return a.out}),jn),
-      plain:segs.map(function(a){return a.plain}).join(", ")},warn:unsel.length>0});
-    boxes.push({label:"ネガティブ",a:assemble(w.neg,fmt),neg:true,sm:true});
+      plain:segs.map(function(a){return a.plain}).join(", ")},warn:unsel.length>0,key:"px",nm:"プロンプト"});
+    boxes.push({label:"ネガティブ",a:assemble(w.neg,fmt),neg:true,sm:true,key:"neg",nm:"ネガ"});
   }
   return {svc:svc,boxes:boxes,unsel:unsel};
 }
@@ -1508,6 +1595,7 @@ function renderSide(){
     '<span class="hint">タグはまだありません</span>';
   document.querySelectorAll("#tagMode [data-m]").forEach(function(b){b.classList.toggle("on",b.dataset.m===S.f.tagMode)});
   document.querySelectorAll(".kind").forEach(function(x){x.classList.toggle("on",x.dataset.kind===S.f.kind)});
+  document.querySelectorAll(".kbtn").forEach(function(x){x.classList.toggle("on",x.dataset.kb===S.f.kind)});
   $("#catList").innerHTML=cats.map(function(x){return '<option value="'+esc(x)+'">'}).join("");
   $("#stat").textContent=S.prompts.length+" 件登録";
 }
@@ -1652,6 +1740,7 @@ function rowHTML(p,all){
         '<button class="ico" data-a="fav" title="お気に入り"><span class="star'+(p.fav?" on":"")+'">★</span></button>'+
         '<button class="ico" data-a="edit" title="編集">✎</button>'+
         '<button class="ico" data-a="del" title="削除">🗑</button>'+
+        '<button class="ico rowMore" data-a="more" title="操作" aria-haspopup="true" aria-label="操作">⋯</button>'+
       '</span></div>';
 }
 
@@ -1701,6 +1790,7 @@ function updateOut(){
     '<p class="hint" style="margin:0 0 8px">PixAI では全キャラのタグが1本にまとまるため、どのタグがどのキャラに効くかは指定できません。</p>':"");
   var wd=workDirty();
   $("#wDirty").style.display=wd?"":"none";
+  renderSeq();
 }
 var SEXJA={girl:"女性",boy:"男性",other:"その他"};
 function sexOpts(v){
@@ -1875,9 +1965,9 @@ function newEntry(kind,name,src){
   return {id:uid(),kind:kind,cat:src?src.cat:(kind==="sit"?CAT_SIT:CAT_CHAR),name:name,tags:src?src.tags.slice():[],
     note:src?src.note:"",fav:false,uses:0,created:Date.now()};
 }
-function copy(txt,msg){
+function copy(txt,msg,after){
   if(!txt){toast("コピーするものがありません");return}
-  var ok=function(){toast(msg||"コピーしました")};
+  var ok=function(){toast(msg||"コピーしました");if(after)after()};
   if(navigator.clipboard&&navigator.clipboard.writeText){
     navigator.clipboard.writeText(txt).then(ok,function(){fallback(txt,ok)});
   }else fallback(txt,ok);
@@ -2021,26 +2111,32 @@ $("#impKind").addEventListener("click",function(e){
 $("#impQ").addEventListener("input",function(){S.pending.iq=this.value;renderImp()});
 $("#impAll").addEventListener("click",function(){impVisible().forEach(function(i){S.pending.sel[i]=true});renderImp()});
 $("#impNone").addEventListener("click",function(){impVisible().forEach(function(i){S.pending.sel[i]=false});renderImp()});
+// JSON を取り込み画面に渡す（ファイルと貼り付けで共通）。取り込み画面を開けたら true
+function importJSON(d){
+  try{
+    var raw=Array.isArray(d)?d:(d&&d.prompts);
+    // 旧形式のバックアップは prompts が無くても、シチュエーション・キャラ・メモ欄のタブがあれば読む
+    if(!Array.isArray(raw)&&d&&(Array.isArray(d.sits)||Array.isArray(d.chars)||Array.isArray(d.tabs)))raw=[];
+    if(!Array.isArray(raw))throw 0;
+    var u=upgrade(d);
+    if(!u.prompts.length){toast("このJSONには読み取れる項目がありません");return false}
+    var gl=collectJa(d);
+    if(u.dict)Object.keys(u.dict).forEach(function(k){gl.unshift([k,u.dict[k]])});
+    S.pending={rows:u.prompts,isBackup:true,cats:u.cats,comp:u.comp,dict:uniqPairs(gl)};
+    var ns=u.prompts.filter(function(p){return p.kind==="sit"}).length,nc=u.prompts.filter(function(p){return p.kind==="char"}).length;
+    openImport("バックアップJSON："+u.prompts.length+" 件（うちシチュエーション "+ns+"・キャラ "+nc+"）"+
+      (S.pending.dict.length?"・訳 "+S.pending.dict.length+" 件":"")+
+      (u.legacy?"。旧形式のシチュエーション・キャラは一覧の項目に変換しました":"")+"。");
+    return true;
+  }catch(e){toast("このJSONは読み込めません");return false}
+}
 function readFile(f){
   var r=new FileReader();
   if(/\.json$/i.test(f.name)){
     r.onload=function(){
-      try{
-        var d=JSON.parse(r.result);
-        var raw=Array.isArray(d)?d:(d&&d.prompts);
-        // 旧形式のバックアップは prompts が無くても、シチュエーション・キャラ・メモ欄のタブがあれば読む
-        if(!Array.isArray(raw)&&d&&(Array.isArray(d.sits)||Array.isArray(d.chars)||Array.isArray(d.tabs)))raw=[];
-        if(!Array.isArray(raw))throw 0;
-        var u=upgrade(d);
-        if(!u.prompts.length){toast("このJSONには読み取れる項目がありません");return}
-        var gl=collectJa(d);
-        if(u.dict)Object.keys(u.dict).forEach(function(k){gl.unshift([k,u.dict[k]])});
-        S.pending={rows:u.prompts,isBackup:true,cats:u.cats,comp:u.comp,dict:uniqPairs(gl)};
-        var ns=u.prompts.filter(function(p){return p.kind==="sit"}).length,nc=u.prompts.filter(function(p){return p.kind==="char"}).length;
-        openImport("バックアップJSON："+u.prompts.length+" 件（うちシチュエーション "+ns+"・キャラ "+nc+"）"+
-          (S.pending.dict.length?"・訳 "+S.pending.dict.length+" 件":"")+
-          (u.legacy?"。旧形式のシチュエーション・キャラは一覧の項目に変換しました":"")+"。");
-      }catch(e){toast("このJSONは読み込めません")}
+      var d;
+      try{d=JSON.parse(r.result)}catch(e){toast("このJSONは読み込めません");return}
+      importJSON(d);
     };
     r.readAsText(f);return;
   }
@@ -2061,6 +2157,41 @@ function readFile(f){
   };
   r.readAsArrayBuffer(f);
 }
+// 貼り付けた文字列から JSON を取り出す：```json の囲みの中身 → 全体 → 最初の { か [ から最後の } か ] まで
+function parseJsonText(t){
+  t=str(t).replace(/^\uFEFF/,"").trim();
+  var tries=[],m=/```(?:json)?[ \t]*\r?\n?([\s\S]*?)```/i.exec(t),i,a,k,pos=0,b;
+  if(m)tries.push(m[1].trim());
+  tries.push(t);
+  b=Math.max(t.lastIndexOf("}"),t.lastIndexOf("]"));
+  for(i=0;i<20;i++){
+    k=t.slice(pos).search(/[{\[]/);
+    if(k<0)break;
+    a=pos+k;if(a>=b)break;
+    tries.push(t.slice(a,b+1));pos=a+1;
+  }
+  for(i=0;i<tries.length;i++){
+    if(!tries[i])continue;
+    try{var v=JSON.parse(tries[i]);if(v&&typeof v==="object")return {v:v}}catch(e){}
+  }
+  return null;
+}
+function openPaste(){
+  $("#pasteTx").value="";
+  $("#pasteClip").style.display=(navigator.clipboard&&navigator.clipboard.readText)?"":"none";
+  $("#mPaste").classList.add("on");
+  setTimeout(function(){$("#pasteTx").focus()},30);
+}
+$("#bPaste").addEventListener("click",openPaste);
+$("#pasteClip").addEventListener("click",function(){
+  var fail=function(){toast("貼り付けを許可できませんでした。入力欄を長押しして貼り付けてください")};
+  try{navigator.clipboard.readText().then(function(t){$("#pasteTx").value=t},fail)}catch(e){fail()}
+});
+$("#pasteGo").addEventListener("click",function(){
+  var r=parseJsonText($("#pasteTx").value);
+  if(!r){toast("JSON として読み取れませんでした。Muse の返答をそのまま貼り付けてください");return}
+  if(importJSON(r.v)){$("#mPaste").classList.remove("on");$("#pasteTx").value=""}
+});
 function snapshot(){
   return JSON.parse(JSON.stringify({prompts:S.prompts,cats:S.cats,comp:S.comp,dict:S.dict}));
 }
@@ -2182,6 +2313,9 @@ function expo(kind){
 /* ---------- イベント：一覧・絞り込み ---------- */
 $("#q").addEventListener("input",function(){S.f.q=this.value;renderList()});
 $("#sort").addEventListener("change",function(){S.sort=this.value;renderList()});
+document.querySelectorAll(".kbtn").forEach(function(b){
+  b.addEventListener("click",function(){S.f.kind=b.dataset.kb;render()});
+});
 document.querySelectorAll(".kind").forEach(function(b){
   b.addEventListener("click",function(){S.f.kind=b.dataset.kind;render()});
 });
@@ -2234,6 +2368,7 @@ $("#list").addEventListener("click",function(e){
   if(!p)return;
   if(!act){addToMemo(p);return}
   var a=act.dataset.a;
+  if(a==="more"){e.stopPropagation();openRowMenu(act,p);return}
   if(a==="fup"||a==="fdn"){moveScene(p,a==="fup"?-1:1);return}
   if(a==="sel"){
     if(S.sel[p.id])delete S.sel[p.id];else S.sel[p.id]=true;
@@ -2509,6 +2644,33 @@ function copyAll(after){
   return true;
 }
 $("#cpAll").addEventListener("click",function(){copyAll()});
+/* 順番コピー：欄ごとに、コピーしたときの文字列を覚えて、いまの出力と同じなら ✓（保存はしない） */
+var seqDone={};
+function seqBoxes(){return S.out?S.out.boxes.filter(function(b){return b.a.out}):[]}
+function seqIs(b){return seqDone[b.key]===b.a.out}
+function renderSeq(){
+  var bx=seqBoxes(),el=$("#seq");
+  el.classList.toggle("on",bx.length>0);
+  if(!bx.length){el.innerHTML="";return}
+  var nxt=null;
+  var h=bx.map(function(b){
+    var d=seqIs(b);if(!d&&!nxt)nxt=b;
+    return '<button data-sq="'+esc(b.key)+'"'+(d?' class="done"':'')+' aria-label="'+esc(b.nm)+'だけをコピー">'+esc(b.nm)+
+      (b.unsel?'<small>未選択</small>':'')+(d?'<i>✓</i>':'')+'</button>';
+  }).join("");
+  el.innerHTML='<div class="seqList">'+h+'</div><div class="seqAct"><button class="btn go" id="seqNext"'+(nxt?'':' disabled')+'>'+
+    (nxt?'次をコピー：'+esc(nxt.nm):'すべてコピーしました')+'</button><button class="btn" id="seqReset">最初から</button></div>';
+}
+$("#seq").addEventListener("click",function(e){
+  var b=e.target.closest("button");if(!b)return;
+  if(b.id==="seqReset"){seqDone={};renderSeq();return}
+  var bx=seqBoxes(),t=null;
+  if(b.id==="seqNext"){t=bx.filter(function(x){return !seqIs(x)})[0]}
+  else if(b.dataset.sq)t=bx.filter(function(x){return x.key===b.dataset.sq})[0];
+  if(!t)return;
+  var left=bx.filter(function(x){return x!==t&&!seqIs(x)}).length,out=t.a.out,key=t.key;
+  copy(out,t.nm+"をコピーしました（残り "+left+"）",function(){seqDone[key]=out;renderSeq()});
+});
 $("#openBar").addEventListener("click",function(e){
   var a=e.target.closest("a[data-open]");if(!a)return;
   // コピーしてから開く（リンクを実際にタップした扱いにすると、スマホでユニバーサルリンクが働く）
@@ -2528,13 +2690,27 @@ $("#dlTxt").addEventListener("click",function(){
   toast(o.unsel.length?".txtを保存しました（"+unselText(o.unsel)+"はキャラが未選択です）":".txtを保存しました");
 });
 
-/* チップをタップ：訳の小窓 */
+/* チップをタップ：操作パネル（重み・訳・外す）。スマホでは画面下のシート */
 var gpEv=null,gpCid=null,gpAt=0;
-function hideGloss(){gpCid=null;$("#glossPop").classList.remove("on")}
+var PHONE=window.matchMedia("(max-width:720px)"),QPH=$("#q").placeholder;
+function setPh(){$("#q").placeholder=PHONE.matches?"検索（表示名・プロンプト・タグなど）":QPH}
+setPh();
+function onPhone(){setPh();hideGloss()}
+if(PHONE.addEventListener)PHONE.addEventListener("change",onPhone);else if(PHONE.addListener)PHONE.addListener(onPhone);
+function hideGloss(){gpCid=null;$("#glossPop").classList.remove("on");$("#gpBack").classList.remove("on")}
+function gpHeadHTML(c){
+  var g=c.name?null:glossInfo(c.text,c.nl),main=c.name||(g.any?g.s:c.text);
+  return '<div class="gpTitle">'+esc(main)+'</div>'+(main!==c.text?'<div class="gpFull">'+esc(c.text)+'</div>':"");
+}
 function openGloss(chipEl,ev){
   var f=findChip(chipEl.dataset.c),m=$("#glossPop");if(!f)return;
   if(m.classList.contains("on")&&gpCid===f.c.cid){hideGloss();return}
-  var c=f.c,seen=Object.create(null),h="";
+  var c=f.c,seen=Object.create(null),h='<div class="gpHead"><div id="gpHeadTx">'+gpHeadHTML(c)+'</div>'+
+    '<button class="btn gpClose" data-gw="x">閉じる</button></div>'+
+    '<div class="gpW"><button class="btn" data-gw="dn" aria-label="重みを下げる">−</button>'+
+    '<span class="gpWv" id="gpWv" aria-live="polite">'+c.w.toFixed(2)+'</span>'+
+    '<button class="btn" data-gw="up" aria-label="重みを上げる">＋</button>'+
+    '<button class="btn gpRs" data-gw="rs">1.0 に戻す</button></div>';
   glossTokens(c.text,c.nl).forEach(function(t){
     var k=tokKey(t.en);if(!k||seen[k])return;seen[k]=1;
     h+='<div class="gpRow"><div class="gpEn">'+esc(t.en)+'</div>'+
@@ -2544,18 +2720,37 @@ function openGloss(chipEl,ev){
       (c.nl?"":'<a class="btn" href="'+esc("https://danbooru.donmai.us/wiki_pages/"+encodeURIComponent(k.replace(/ /g,"_")))+
         '" target="_blank" rel="noopener noreferrer">Danbooru の解説を開く</a>')+'</div></div>';
   });
-  if(!h)return;
+  h+='<button class="btn danger gpRm" data-gw="rm">このチップを外す</button>';
   gpCid=c.cid;gpEv=ev;gpAt=Date.now();
-  m.innerHTML=h;m.classList.add("on");
+  m.innerHTML=h;m.classList.add("on");m.scrollTop=0;
   var r=chipEl.getBoundingClientRect(),rr=m.getBoundingClientRect();
+  if(PHONE.matches){
+    $("#gpBack").classList.add("on");
+    // シートで隠れる位置のチップは、見える位置までスクロールする
+    var dr=$("#dock").getBoundingClientRect(),over=r.bottom-rr.top+12;
+    if(over>0)$("#dock").scrollTop+=Math.max(0,Math.min(over,r.top-dr.top-4));
+    return;
+  }
   var top=r.bottom+6;if(top+rr.height>window.innerHeight-8)top=Math.max(8,r.top-rr.height-6);
   m.style.top=top+"px";m.style.left=Math.max(8,Math.min(r.left,window.innerWidth-rr.width-8))+"px";
   if(window.matchMedia&&window.matchMedia("(pointer:fine)").matches){var i=m.querySelector("input");if(i)setTimeout(function(){i.focus()},20)}
 }
+$("#glossPop").addEventListener("click",function(e){
+  var b=e.target.closest("[data-gw]");if(!b)return;
+  var a=b.dataset.gw,f=gpCid&&findChip(gpCid),st=parseFloat(S.cfg.step);
+  if(a==="x"||!f){hideGloss();return}
+  if(a==="rm"){f.arr.splice(f.i,1);hideGloss();changed();return}
+  if(a==="up")f.c.w=Math.min(2,Math.round((f.c.w+st)*100)/100);
+  if(a==="dn")f.c.w=Math.max(0.1,Math.round((f.c.w-st)*100)/100);
+  if(a==="rs")f.c.w=1;
+  $("#gpWv").textContent=f.c.w.toFixed(2);
+  changed();
+});
 $("#glossPop").addEventListener("change",function(e){
   var i=e.target.closest("[data-gk]");if(!i)return;
   if(!dictSet(i.dataset.gk,i.value))toast("辞書がいっぱいです（上限 "+DICT_MAX+" 件）");
   render();save();
+  var f=gpCid&&findChip(gpCid),h=$("#gpHeadTx");if(f&&h)h.innerHTML=gpHeadHTML(f.c);
 });
 document.addEventListener("click",function(e){
   if(e===gpEv||e.target.closest("#glossPop"))return;
@@ -2564,6 +2759,7 @@ document.addEventListener("click",function(e){
 $("#dock").addEventListener("scroll",function(){
   var a=document.activeElement;
   if(Date.now()-gpAt<500||(a&&a.closest&&a.closest("#glossPop")))return; // 開いた直後のスクロール（見える位置への移動）は無視
+  if(PHONE.matches&&$("#glossPop").classList.contains("on"))return; // スマホのシートは、スクロールでは閉じない
   hideGloss();
 },{passive:true});
 $("#showGloss").addEventListener("change",function(){S.cfg.showGloss=this.checked;updateOut();save()});
@@ -2941,7 +3137,7 @@ document.querySelectorAll(".modal").forEach(function(m){
   m.addEventListener("click",function(e){if(e.target===m)m.classList.remove("on")})});
 document.addEventListener("keydown",function(e){
   if(e.key==="Escape"){document.querySelectorAll(".modal.on").forEach(function(m){m.classList.remove("on")});
-    $("#expMenu").classList.remove("on");hideGloss()}
+    closeMenus();hideGloss()}
   if((e.ctrlKey||e.metaKey)&&e.key==="k"){e.preventDefault();showView(1);$("#q").focus();$("#q").select()}
   if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="z"){
     var t=e.target.tagName;
@@ -2968,11 +3164,69 @@ $("#bExp").addEventListener("click",function(e){
   m.style.top=(r.bottom+6)+"px";m.style.left=Math.max(8,r.right-200)+"px";
   m.classList.toggle("on");e.stopPropagation();
 });
-document.addEventListener("click",function(){$("#expMenu").classList.remove("on")});
+document.addEventListener("click",closeMenus);
 $("#expMenu").addEventListener("click",function(e){
   var b=e.target.closest("[data-x]");if(!b)return;
   $("#expMenu").classList.remove("on");expo(b.dataset.x);
 });
+function closeMenus(){["#expMenu","#moreMenu","#rowMenu"].forEach(function(i){$(i).classList.remove("on")})}
+// メニューを、ボタン（矩形 r）の下に右端をそろえて出す。入りきらなければ上に出す
+function placeMenu(m,r){
+  m.classList.add("on");
+  var rr=m.getBoundingClientRect(),top=r.bottom+6;
+  if(top+rr.height>window.innerHeight-8)top=Math.max(8,r.top-rr.height-6);
+  m.style.top=top+"px";m.style.left=Math.max(8,Math.min(r.right-rr.width,window.innerWidth-rr.width-8))+"px";
+}
+/* スマホ：一覧の「⋯」メニュー（PC の上のボタン・並べ替え・すべて選択と同じ処理を呼ぶ） */
+var SORTS=[["new","追加が新しい順"],["fav","お気に入り優先"],["uses","使用回数が多い順"],["name","表示名順"]];
+$("#bMore").addEventListener("click",function(e){
+  e.stopPropagation();
+  var m=$("#moreMenu");
+  if(m.classList.contains("on")){m.classList.remove("on");return}
+  m.innerHTML='<button data-m="imp">取り込み（ファイル）</button><button data-m="paste">貼り付けて取り込む</button>'+
+    '<button data-m="exp">書き出し…</button><hr><div class="mh">並べ替え</div>'+
+    SORTS.map(function(o){return '<button data-sort="'+o[0]+'"><span class="mck">'+(S.sort===o[0]?"✓":"")+'</span>'+esc(o[1])+'</button>'}).join("")+
+    '<button data-m="all">表示中をすべて選択</button>'+
+    ($("#bDelF").style.display==="none"?"":'<button class="dng" data-m="delf">'+esc($("#bDelF").textContent)+'</button>')+'<hr><button data-m="set">設定</button><div class="mh">'+S.prompts.length+' 件登録</div>';
+  closeMenus();placeMenu(m,this.getBoundingClientRect());
+});
+$("#moreMenu").addEventListener("click",function(e){
+  e.stopPropagation();
+  var b=e.target.closest("button");if(!b)return;
+  var k=b.dataset.m;
+  $("#moreMenu").classList.remove("on");
+  if(b.dataset.sort){S.sort=b.dataset.sort;$("#sort").value=S.sort;renderList();return}
+  if(k==="imp")$("#bImp").click();
+  else if(k==="paste")openPaste();
+  else if(k==="exp")placeMenu($("#expMenu"),$("#bMore").getBoundingClientRect());
+  else if(k==="all")$("#bSelAll").click();
+  else if(k==="delf")$("#bDelF").click();
+  else if(k==="set")$("#bSet").click();
+});
+/* スマホ：行の「⋯」メニュー */
+var rmId=null;
+function openRowMenu(btn,p){
+  var m=$("#rowMenu");
+  if(m.classList.contains("on")&&rmId===p.id){m.classList.remove("on");return}
+  var inF=p.kind==="sit"&&p.folder,all=inF?folderMembers(p.folder):[],ix=all.indexOf(p);
+  rmId=p.id;
+  m.innerHTML='<button data-r="fav">'+(p.fav?"お気に入りを外す":"お気に入りにする")+'</button><button data-r="edit">編集</button>'+
+    (inF?'<button data-r="up"'+(ix<=0?" disabled":"")+'>前へ</button><button data-r="dn"'+(ix>=all.length-1?" disabled":"")+'>後ろへ</button>':"")+
+    '<button class="dng" data-r="del">削除</button>';
+  closeMenus();placeMenu(m,btn.getBoundingClientRect());
+}
+$("#rowMenu").addEventListener("click",function(e){
+  e.stopPropagation();
+  var b=e.target.closest("[data-r]");if(!b||b.disabled)return;
+  var p=byId(rmId),a=b.dataset.r;
+  $("#rowMenu").classList.remove("on");
+  if(!p)return;
+  if(a==="fav"){p.fav=!p.fav;renderList();save()}
+  else if(a==="edit")openEdit(p);
+  else if(a==="del")delPrompts([p.id]);
+  else moveScene(p,a==="up"?-1:1);
+});
+$("#fabNew").addEventListener("click",function(){openEdit(null)});
 
 /* ---------- 設定 ---------- */
 function renderCatMgr(){
@@ -3163,7 +3417,7 @@ function showView(n){
     $("#dock").scrollTop=0;
     n=curView===3?1:curView;
   }
-  curView=n;
+  curView=n;hideGloss();
   document.querySelectorAll(".view").forEach(function(v){v.classList.toggle("on",v.id==="v"+n)});
   document.querySelectorAll(".mtab").forEach(function(b){b.classList.toggle("on",b.dataset.v===String(n))});
 }
@@ -3179,8 +3433,9 @@ function updateNav(){
   setBd("#bd2",nfilters());
   setBd("#bd3",S.comp.chars.filter(Boolean).length);
   var tb=$("#tgtbar");
-  tb.innerHTML='<span class="fl">追加先</span><span class="fv"></span><button class="btn mini" data-go="1">組み立てを開く</button>';
-  tb.querySelector(".fv").textContent=tgtLabel()+"（ネガはネガティブへ・表情は選択中のキャラ枠の表情へ／シチュ・キャラは組み立てに読み込み）";
+  tb.innerHTML='<span class="fl">追加先</span><span class="fv"></span><button class="btn mini" data-go="1"><span class="bl">組み立てを開く</span><span class="bs">開く</span></button>';
+  var tv=tb.querySelector(".fv"),tx=document.createElement("span");
+  tv.textContent=tgtLabel();tx.className="fx";tx.textContent="（ネガはネガティブへ・表情は選択中のキャラ枠の表情へ／シチュ・キャラは組み立てに読み込み）";tv.appendChild(tx);
   if(S.f.kind!=="all")parts.push(KLAB[S.f.kind]);
   if(S.f.cats.length)parts.push(S.f.cats.join(" / "));
   if(S.f.tags.length)parts.push(S.f.tags.map(function(x){return "#"+x}).join(S.f.tagMode==="and"?" & ":" / "));
