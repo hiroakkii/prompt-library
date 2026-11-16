@@ -975,7 +975,7 @@ function normPrompt(p,i,seen){
     o.cat=o.cat||CAT_CHAR;o.name=o.name||"キャラ";
   }else{
     var text=str(p.text).trim();if(!text)return null;
-    o.text=text;o.nl=!!p.nl;o.cat=o.cat||OTHER;o.name=o.name||text.slice(0,28);
+    o.text=text;o.nl=!!p.nl;o.cat=o.cat||(kind==="face"?CAT_FACE:OTHER);o.name=o.name||text.slice(0,28);
   }
   if(kind==="sit"||kind==="char")o.text=summary(o);
   seen[id]=1;
@@ -2028,6 +2028,8 @@ function readFile(f){
       try{
         var d=JSON.parse(r.result);
         var raw=Array.isArray(d)?d:(d&&d.prompts);
+        // 旧形式のバックアップは prompts が無くても、シチュエーション・キャラ・メモ欄のタブがあれば読む
+        if(!Array.isArray(raw)&&d&&(Array.isArray(d.sits)||Array.isArray(d.chars)||Array.isArray(d.tabs)))raw=[];
         if(!Array.isArray(raw))throw 0;
         var u=upgrade(d);
         if(!u.prompts.length){toast("このJSONには読み取れる項目がありません");return}
