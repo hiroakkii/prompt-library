@@ -120,6 +120,7 @@
   .row.sel{background:var(--pos-bg)}
   .rmain{min-width:0; flex:1}
   .rname{font-size:14.5px; font-weight:500; margin-bottom:2px; display:flex; align-items:center; gap:7px; min-width:0}
+  .rgloss{font-size:13px; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
   .rtext{font-family:var(--mono); font-size:12.5px; color:var(--ink2); overflow:hidden;
          text-overflow:ellipsis; white-space:nowrap}
   .rcat{font-size:12px; color:var(--ink3); white-space:nowrap; max-width:9em; overflow:hidden; text-overflow:ellipsis}
@@ -206,7 +207,10 @@
   .chip.drag{opacity:.35}
   .chip.ghost{position:fixed; z-index:70; pointer-events:none; opacity:.95; cursor:grabbing;
               box-shadow:0 8px 22px rgba(28,38,51,.22); margin:0}
-  .chip .cn{max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .chip .cl{display:flex; flex-direction:column; min-width:0; max-width:220px; line-height:1.3}
+  .chip .cn{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .chip .ce{font:400 10.5px/1.3 var(--mono); color:var(--ink3); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .chip.nogloss .cn{text-decoration:underline dotted var(--rule2); text-decoration-thickness:2px; text-underline-offset:3px}
   .chip .nlb{margin-right:3px}
   .chip .w{font-family:var(--mono); font-size:11.5px; font-weight:700; color:var(--pos-dk); margin:0 2px}
   .chip.n .w{color:var(--neg)}
@@ -229,6 +233,7 @@
   .out.sm{min-height:72px}
   .hint{color:var(--ink3); font-size:12.5px}
   .free{font-family:var(--mono); font-size:13px}
+  .outGloss{margin:6px 2px 0; font-size:13px; line-height:1.7; color:var(--ink2)}
 
   /* モーダル・メニュー・トースト */
   .modal{position:fixed; inset:0; background:rgba(28,38,51,.38); display:none; place-items:center; z-index:40; padding:20px}
@@ -326,6 +331,17 @@
                font-size:14px; color:var(--ink)}
   .menu button:hover{background:var(--wash)}
   .menu hr{border:0; border-top:1px solid var(--rule); margin:5px 0}
+  .glossPop{position:fixed; width:min(320px,calc(100vw - 16px)); padding:10px}
+  .gpRow{margin-bottom:10px}
+  .gpRow:last-child{margin-bottom:0}
+  .gpEn{font:400 12.5px/1.5 var(--mono); color:var(--ink2); overflow-wrap:anywhere; margin-bottom:4px}
+  .gpLinks{display:flex; gap:6px; flex-wrap:wrap; margin-top:6px}
+  .glossPop a.btn{text-decoration:none; display:inline-flex; align-items:center; font-size:12.5px; padding:6px 10px}
+  .dictBtns{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px}
+  .dRow{display:flex; align-items:center; gap:8px; padding:6px 6px 6px 12px; border-top:1px solid var(--rule)}
+  .dRow:first-child{border-top:0}
+  .dRow .dEn{flex:1 1 38%; min-width:0; font:400 12.5px/1.5 var(--mono); color:var(--ink2); overflow-wrap:anywhere}
+  .dRow .fld{flex:1 1 52%; min-width:0; width:auto; padding:6px 9px}
 
   /* スマホ：タブを画面下に置いて親指で切り替える */
   @media (max-width:720px){
@@ -342,7 +358,10 @@
     .row{gap:10px; padding:10px 8px 10px 16px}
     .ract{gap:0}
     .ico{width:32px; height:32px}
-    .chip .cn{max-width:150px}
+    .chip .cl{max-width:150px}
+    .dRow{flex-wrap:wrap}
+    .dRow .dEn{flex:1 1 100%}
+    .dRow .fld{flex:1 1 0}
     .toast{bottom:calc(var(--tabh) + 16px + env(safe-area-inset-bottom))}
     .fr{flex-direction:column; gap:0}
     .card{padding:18px 16px 16px}
@@ -504,6 +523,7 @@
       <div class="bhead">
         <span class="btitle">出力</span>
         <span class="grow"></span>
+        <label class="chk2" style="margin:0"><input type="checkbox" id="showGloss"> 訳を表示</label>
         <button class="btn mini" id="cpAll" title=".txt と同じ形（見出し付き）で、すべての出力をまとめてコピーします">まとめてコピー</button>
         <button class="btn mini" id="dlTxt">.txtで保存</button>
       </div>
@@ -633,6 +653,20 @@
   <div id="catMgr"></div>
 
   <hr class="sep">
+  <h4>訳の辞書</h4>
+  <p class="note" id="dictInfo"></p>
+  <div class="dictBtns">
+    <button class="btn mini" id="dOpen">辞書を開く</button>
+    <button class="btn mini" id="dCopy">未訳のタグをコピー</button>
+    <button class="btn mini" id="dFile">辞書ファイルを取り込む</button>
+    <button class="btn mini" id="dExp">辞書を書き出す</button>
+  </div>
+  <div class="f"><label for="dPaste">訳を貼り付けて取り込む</label>
+    <textarea class="fld" id="dPaste" rows="3" placeholder='{"silver hair":"銀髪"} や、1行に1つの「silver hair = 銀髪」'></textarea>
+    <div class="acts" style="margin-top:8px"><button class="btn mini" id="dPasteGo">取り込む</button></div>
+    <div class="hint">すでにある訳は上書きされます。辞書ファイルは .json / .csv / .tsv / .txt を読めます（すでにある訳は残します）。</div></div>
+
+  <hr class="sep">
   <h4>データ</h4>
   <p class="note" id="storeInfo"></p>
   <p class="note">データはこのアプリ内に自動保存されます。念のため、ときどきJSONで書き出して手元に残してください。</p>
@@ -649,6 +683,20 @@
   <div class="acts"><button class="btn go" data-close>閉じる</button></div>
 </div></div>
 
+<div class="modal" id="mDict"><div class="card wide">
+  <h3>訳の辞書</h3>
+  <p class="note" id="dictCount"></p>
+  <div class="impTools">
+    <span class="seg" id="dictMode" style="margin-left:0">
+      <button class="btn on" data-dm="all">すべて</button><button class="btn" data-dm="un">未訳だけ</button>
+    </span>
+    <input class="fld" id="dictQ" placeholder="英語・日本語で絞り込み">
+  </div>
+  <div class="impList" id="dictList"></div>
+  <div class="acts"><button class="btn go" data-close>閉じる</button></div>
+</div></div>
+
+<div class="menu glossPop" id="glossPop"></div>
 <div class="menu sceneMenu" id="sceneMenu"></div>
 <div class="menu facePick" id="facePick">
   <input class="fld" id="fpQ" placeholder="表情プロンプトを検索">
@@ -661,9 +709,12 @@
   <hr>
   <button data-x="json">JSON バックアップを保存</button>
   <button data-x="tpl">取り込み用テンプレートを作る</button>
+  <hr>
+  <button data-x="muse">Muse への依頼文をコピー</button>
 </div>
 
 <input type="file" id="file" accept=".xlsx,.xls,.csv,.json" hidden>
+<input type="file" id="dfile" accept=".json,.csv,.tsv,.txt" hidden>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -671,7 +722,7 @@
 "use strict";
 var $=function(s){return document.querySelector(s)};
 var K_LIB="plib.library.v1", K_MEM="plib.memos.v1", K_CFG="plib.config.v1", K_BAK="plib.prereplace.v1",
-    K_CMP2="plib.compose.v2", K_CMP="plib.compose.v3", K_MIG="plib.premigrate.v3";
+    K_CMP2="plib.compose.v2", K_CMP="plib.compose.v3", K_MIG="plib.premigrate.v3", K_DICT="plib.dict.v1";
 var DEFCATS=["オリジナルキャラ","体位","行為","その他"];
 var OTHER="その他", CAT_SIT="シチュエーション", CAT_CHAR="キャラ";
 var KINDS=["pos","neg","face","sit","char"];
@@ -765,11 +816,12 @@ var store={
     chars : [ null（空の枠） | {from, name, sex, look[], outfit[]} ]
     svc, slot, tgt
   チップ : {cid, pid, name, text, w, nl}
+  dict（訳の辞書）: {tokKey(タグ): "日本語"}。訳の保存先はここだけ（チップには持たない）
 */
 var S={
-  prompts:[], cats:DEFCATS.slice(),
+  prompts:[], cats:DEFCATS.slice(), dict:{},
   comp:null,
-  cfg:{dup:false,step:0.05,naiFmt:"nai4",sep:", ",dedup:true,escp:true,auto:true,pxJoin:"comma",links:null},
+  cfg:{dup:false,step:0.05,naiFmt:"nai4",sep:", ",dedup:true,escp:true,auto:true,pxJoin:"comma",links:null,showGloss:true},
   f:{kind:"all",cats:[],tags:[],tagMode:"and",q:""},
   openF:{},
   sort:"new", editing:null, pending:null, sel:{}, undo:null, bak:null, mig:null, out:null
@@ -801,6 +853,7 @@ function doSave(){
   store.set(K_LIB,{prompts:S.prompts,cats:S.cats});
   store.set(K_CMP,{comp:S.comp});
   store.set(K_CFG,S.cfg);
+  store.set(K_DICT,S.dict);
 }
 function save(){dirty=true;clearTimeout(sq);sq=setTimeout(doSave,350)}
 function flush(){if(dirty){clearTimeout(sq);doSave()}}
@@ -853,9 +906,9 @@ function chipsToText(arr){
 }
 function oneLine(arr){return chipsToText(arr).replace(/\n/g," / ")}
 function cloneChips(a){return (a||[]).map(function(c){return {cid:uid(),pid:c.pid,name:c.name,text:c.text,w:c.w,nl:!!c.nl}})}
+function slotSum(p){return slotCount(p)?"  ／ キャラ枠 "+slotCount(p)+(lineCountOf(p)?"（セリフ "+lineCountOf(p)+"）":""):""}
 function summary(p){
-  if(p.kind==="sit")return oneLine(p.base)+(p.neg.length?"  ／ ネガ: "+oneLine(p.neg):"")+
-    (slotCount(p)?"  ／ キャラ枠 "+slotCount(p)+(lineCountOf(p)?"（セリフ "+lineCountOf(p)+"）":""):"");
+  if(p.kind==="sit")return oneLine(p.base)+(p.neg.length?"  ／ ネガ: "+oneLine(p.neg):"")+slotSum(p);
   if(p.kind==="char")return oneLine(p.look)+(p.outfit.length?"  ／ 服装: "+oneLine(p.outfit):"");
   return p.text;
 }
@@ -869,6 +922,7 @@ function splitTags(v){
   return out;
 }
 function normChip(c){
+  if(typeof c==="string")c={text:c};
   if(!c||typeof c!=="object")return null;
   var text=str(c.text).trim();if(!text)return null;
   return {cid:validId(c.cid)?c.cid:uid(),pid:validId(c.pid)?c.pid:null,name:str(c.name),text:text,w:clampW(c.w==null?1:c.w),nl:!!c.nl};
@@ -965,6 +1019,7 @@ function normCfg(c){
   if([", ",",",",\n"].indexOf(c.sep)>=0)d.sep=c.sep;
   if(c.pxJoin==="comma"||c.pxJoin==="para")d.pxJoin=c.pxJoin;
   if(Array.isArray(c.links))d.links=normLinks(c.links);
+  if(typeof c.showGloss==="boolean")d.showGloss=c.showGloss;
 }
 function emptyWork(){return {from:null,name:"",base:[],neg:[],free:"",slots:[],slotFaces:[],slotSex:[],slotLines:[],slotBubbles:[],noOutfit:false}}
 function normWork(w){
@@ -1030,7 +1085,8 @@ function upgrade(d){
     comp.work=s?workFrom(s):emptyWork();
     comp.chars=charIds.map(byId).filter(function(p){return p&&p.kind==="char"}).map(charFrom);
   }
-  return {prompts:prompts,cats:Array.isArray(d)?[]:normCats(d.cats),comp:comp?normComp(comp):null,legacy:extra.length>0};
+  var dict=!Array.isArray(d)&&d.dict&&typeof d.dict==="object"&&!Array.isArray(d.dict)?normDict(d.dict):null;
+  return {prompts:prompts,cats:Array.isArray(d)?[]:normCats(d.cats),comp:comp?normComp(comp):null,legacy:extra.length>0,dict:dict};
 }
 
 /* ---------- 参照 ---------- */
@@ -1245,6 +1301,182 @@ function hintFor(a,svc){
   return h;
 }
 
+/* ---------- 訳の辞書 ---------- */
+var DICT_MAX=20000, GLOSS_LEN=60, DICT_FILE_MAX=5000, UNTRANS_MAX=300;
+var WRAP_RE=/^\(([\s\S]+):\s*(\d+(?:\.\d+)?)\)$/;
+function hasOwn(o,k){return Object.prototype.hasOwnProperty.call(o,k)}
+function glossVal(v){return str(v).trim().slice(0,GLOSS_LEN)}
+function dictCount(){return Object.keys(S.dict).length}
+function normDict(o){
+  var r={},n=0,k,v;
+  if(!o||typeof o!=="object"||Array.isArray(o))return r;
+  for(k in o){
+    if(!hasOwn(o,k)||typeof o[k]!=="string")continue;
+    v=glossVal(o[k]);k=tokKey(k);
+    if(!k||!v||k==="__proto__"||hasOwn(r,k))continue;
+    if(n>=DICT_MAX)break;
+    r[k]=v;n++;
+  }
+  return r;
+}
+function glossOf(tag){var k=tokKey(str(tag));return k&&hasOwn(S.dict,k)?S.dict[k]:""}
+// 1つの訳を入れる／消す（空なら消す）。上限を超えるときは false
+function dictSet(tag,val){
+  var k=tokKey(str(tag));val=glossVal(val);
+  if(!k||k==="__proto__")return true;
+  if(!val){delete S.dict[k];return true}
+  if(!hasOwn(S.dict,k)&&dictCount()>=DICT_MAX)return false;
+  S.dict[k]=val;return true;
+}
+// [[キー, 訳]…] を辞書に足す。overwrite のときは既存の訳を上書き、そうでなければ残す
+function dictMerge(list,overwrite){
+  var r={put:0,kept:0,over:0},n=dictCount();
+  list.forEach(function(x){
+    var k=tokKey(str(x[0])),v=glossVal(x[1]);
+    if(!k||!v||k==="__proto__")return;
+    if(hasOwn(S.dict,k)){
+      if(!overwrite){r.kept++;return}
+      if(S.dict[k]!==v){S.dict[k]=v;r.put++}
+      return;
+    }
+    if(n>=DICT_MAX){r.over++;return}
+    S.dict[k]=v;n++;r.put++;
+  });
+  return r;
+}
+// (tag:1.2) の外側を外した、タグ1つ分の文字列
+function unwrapTag(t){var m=WRAP_RE.exec(t);return m?m[1].trim():t}
+function glossTokens(text,nl){
+  text=str(text);
+  if(nl){var w=text.trim();return w?[{en:w,ja:glossOf(w)}]:[]}
+  return splitTop(text).map(function(t){t=unwrapTag(t);return {en:t,ja:glossOf(t)}});
+}
+function glossInfo(text,nl){
+  var t=glossTokens(text,nl),any=false,full=t.length>0;
+  var s=t.map(function(x){if(x.ja)any=true;else full=false;return x.ja||x.en}).join("、");
+  return {s:s,any:any,full:full};
+}
+function glossText(text,nl){return glossInfo(text,nl).s}
+function hasFullGloss(text,nl){return glossInfo(text,nl).full}
+function glossArr(a){
+  var any=false,s=(a||[]).map(function(c){var g=glossInfo(c.text,c.nl);if(g.any)any=true;return g.s}).join("、");
+  return {s:s,any:any};
+}
+// summary(p) と同じ並びで、チップを訳に通した行（訳が1つもなければ ""）。noTail のときはキャラ枠の件数を付けない
+function summaryGloss(p,noTail){
+  var x,y;
+  if(p.kind==="sit"){
+    x=glossArr(p.base);y=glossArr(p.neg);if(!x.any&&!y.any)return "";
+    return x.s+(p.neg.length?"  ／ ネガ: "+y.s:"")+(noTail?"":slotSum(p));
+  }
+  if(p.kind==="char"){
+    x=glossArr(p.look);y=glossArr(p.outfit);if(!x.any&&!y.any)return "";
+    return x.s+(p.outfit.length?"  ／ 服装: "+y.s:"");
+  }
+  return "";
+}
+// 一覧の行・検索に使う訳（なければ ""）
+function rowGloss(p,noTail){
+  if(isTxt(p.kind)){var g=glossInfo(p.text,p.nl);return g.any?g.s:""}
+  return summaryGloss(p,noTail);
+}
+// 一覧に出てくる、辞書にないタグ（文章は除く・重複なし・出てきた順）
+function eachLibTag(fn){
+  var add=function(text){glossTokens(text,false).forEach(function(t){var k=tokKey(t.en);if(k)fn(k)})};
+  var chips=function(a){(a||[]).forEach(function(c){if(!c.nl)add(c.text)})};
+  S.prompts.forEach(function(p){
+    if(isTxt(p.kind)){if(!p.nl)add(p.text);return}
+    if(p.kind==="sit"){chips(p.base);chips(p.neg);(p.slots||[]).forEach(chips);(p.slotFaces||[]).forEach(chips)}
+    else{chips(p.look);chips(p.outfit)}
+  });
+}
+function untransTags(){
+  var seen=Object.create(null),out=[];
+  eachLibTag(function(k){if(seen[k]||hasOwn(S.dict,k))return;seen[k]=1;out.push(k)});
+  return out;
+}
+// 取り込み用：ja を text のタグに対応させて [[キー,訳]…] に足す
+function jaPairs(text,ja,nl,out){
+  text=str(text).trim();ja=str(ja).trim();if(!text||!ja)return;
+  var ts=nl?[text]:splitTop(text).map(unwrapTag),js=nl?[ja]:ja.split(/[、,，]/).map(function(x){return x.trim()}).filter(Boolean);
+  if(ts.length>1&&ts.length===js.length)ts.forEach(function(t,i){out.push([tokKey(t),js[i]])});
+  else out.push([tokKey(nl?text:ts.length===1?ts[0]:text),ja]);
+}
+function uniqPairs(list){
+  var seen=Object.create(null),out=[];
+  list.forEach(function(x){var k=tokKey(str(x[0])),v=glossVal(x[1]);if(!k||!v||seen[k])return;seen[k]=1;out.push([k,v])});
+  return out;
+}
+// JSON の生データから、チップ・項目の ja を集める（normChip が ja を捨てる前に呼ぶ）
+function collectJa(d){
+  var raw=Array.isArray(d)?d:(d&&Array.isArray(d.prompts)?d.prompts:[]),out=[];
+  var chips=function(a){if(Array.isArray(a))a.forEach(function(c){if(c&&typeof c==="object")jaPairs(c.text,c.ja,c.nl,out)})};
+  raw.forEach(function(p){
+    if(!p||typeof p!=="object")return;
+    jaPairs(p.text,p.ja,p.nl,out);
+    chips(p.base);chips(p.neg);chips(p.look);chips(p.outfit);
+    if(Array.isArray(p.slots))p.slots.forEach(chips);
+    if(Array.isArray(p.slotFaces))p.slotFaces.forEach(chips);
+  });
+  return out;
+}
+function glossNote(r){
+  if(!r)return "";
+  return "。訳 "+r.put+" 件を辞書に追加（すでにある "+r.kept+" 件はそのまま）"+
+    (r.over?"。辞書が上限（"+DICT_MAX+" 件）のため "+r.over+" 件は入れられませんでした":"");
+}
+// 貼り付け・ファイルの文字列を [[タグ,訳]…] に読む。bad は読めなかった行の数
+function parseDictText(text){
+  var pairs=[],bad=0,t=str(text),a=t.indexOf("{"),b=t.lastIndexOf("}");
+  if(a>=0&&b>a){
+    try{
+      var o=JSON.parse(t.slice(a,b+1));
+      if(o&&typeof o==="object"&&!Array.isArray(o)){
+        if(o.dict&&typeof o.dict==="object"&&!Array.isArray(o.dict))o=o.dict;
+        Object.keys(o).forEach(function(k){if(typeof o[k]==="string"&&o[k].trim())pairs.push([k,o[k]]);else bad++});
+        return {pairs:pairs,bad:bad};
+      }
+    }catch(e){}
+  }
+  var unq=function(x){return x.trim().replace(/^["'`]+|["'`]+$/g,"").trim()};
+  t.split(/\r?\n/).forEach(function(line){
+    line=line.trim();
+    if(!line||/^```/.test(line)||line==="{"||line==="}"||line==="["||line==="]")return;
+    var m=/^"([^"]+)"\s*:\s*"([^"]*)"\s*,?$/.exec(line),k,v;
+    if(m){k=m[1];v=m[2]}
+    else{
+      m=line.indexOf("\t")>=0?/^([^\t]*)\t([\s\S]*)$/.exec(line):
+        /^([^=]+?)\s*=\s*([\s\S]*)$/.exec(line)||/^([^,，]+?)\s*[,，]\s*([\s\S]*)$/.exec(line)||/^(.+?)\s*[:：]\s*(\S[\s\S]*)$/.exec(line);
+      if(m){k=unq(m[1]);v=unq(m[2].replace(/,\s*$/,""))}
+    }
+    if(m&&k&&v)pairs.push([k,v]);else bad++;
+  });
+  return {pairs:pairs,bad:bad};
+}
+// CSV / TSV：1列目がタグ、日本語を含む最初の列が訳
+function csvCells(line,sep){
+  var out=[],buf="",q=false,i,ch;
+  for(i=0;i<line.length;i++){
+    ch=line.charAt(i);
+    if(q){if(ch==='"'){if(line.charAt(i+1)==='"'){buf+='"';i++}else q=false}else buf+=ch}
+    else if(ch==='"')q=true;
+    else if(ch===sep){out.push(buf);buf=""}
+    else buf+=ch;
+  }
+  out.push(buf);return out;
+}
+var JA_RE=/[\u3040-\u30ff\u3400-\u9fff]/;
+function parseDictCsv(text,sep){
+  var pairs=[],bad=0;
+  str(text).replace(/^\uFEFF/,"").split(/\r?\n/).forEach(function(line){
+    if(!line.trim())return;
+    var c=csvCells(line,sep),k=c[0].trim(),v="",i;
+    for(i=1;i<c.length;i++)if(JA_RE.test(c[i])){v=c[i].trim();break}
+    if(k&&v)pairs.push([k,v]);else bad++;
+  });
+  return {pairs:pairs,bad:bad};
+}
+
 /* ---------- 描画：一覧・絞り込み ---------- */
 function allCats(){
   var cats=S.cats.slice();
@@ -1280,7 +1512,7 @@ function renderSide(){
   $("#stat").textContent=S.prompts.length+" 件登録";
 }
 function hayOf(p){
-  return (p.name+" "+p.text+" "+p.tags.join(" ")+" "+p.note+" "+p.cat+" "+(p.folder||"")).toLowerCase();
+  return (p.name+" "+p.text+" "+rowGloss(p,true)+" "+p.tags.join(" ")+" "+p.note+" "+p.cat+" "+(p.folder||"")).toLowerCase();
 }
 /* ---------- フォルダ（連続したシーン）---------- */
 function byOrder(a,b){return (a.order||0)-(b.order||0)||a.created-b.created}
@@ -1403,13 +1635,14 @@ function folderRowHTML(name,mem,all,open){
     '<span class="ract"><button class="ico" data-a="fren" title="フォルダ名を変更">✎</button></span></div>';
 }
 function rowHTML(p,all){
-    var on=!!S.sel[p.id],big=p.kind==="sit"||p.kind==="char"||p.kind==="face",inF=!!all,ix=inF?all.indexOf(p):-1;
+    var on=!!S.sel[p.id],big=p.kind==="sit"||p.kind==="char"||p.kind==="face",inF=!!all,ix=inF?all.indexOf(p):-1,rg=rowGloss(p);
     return '<div class="row '+p.kind+(inF?" infolder":"")+(on?" sel":"")+'" data-id="'+esc(p.id)+'" tabindex="0">'+
       '<button class="chk'+(on?" on":"")+'" data-a="sel" role="checkbox" aria-checked="'+on+
         '" aria-label="選択">✓</button>'+
       '<div class="rmain"><div class="rname">'+(inF?'<span class="sn2">'+(ix+1)+'.</span>':(big?'<span class="kb '+p.kind+'">'+KLAB[p.kind]+'</span>':""))+
         esc(p.name||"(名称なし)")+(p.nl?' <span class="nlb">文章</span>':"")+
         (p.fav?' <span class="star on">★</span>':"")+'</div>'+
+      (rg?'<div class="rgloss">'+esc(rg)+'</div>':"")+
       '<div class="rtext">'+esc(p.text)+'</div></div>'+
       '<span class="rcat">'+esc(p.cat)+'</span>'+
       '<span class="uses">'+(p.uses||0)+'</span>'+
@@ -1424,8 +1657,10 @@ function rowHTML(p,all){
 
 /* ---------- 描画：組み立て ---------- */
 function chipHTML(c,k){
-  return '<div class="chip'+(k==="neg"?" n":(k==="face"?" fc":""))+'" data-c="'+esc(c.cid)+'" data-k="'+k+'" title="'+esc(c.text)+'">'+
-    (c.nl?'<span class="nlb">文</span>':"")+'<span class="cn">'+esc(c.name||c.text)+'</span>'+
+  var g=c.name?null:glossInfo(c.text,c.nl),main=c.name||(g.any?g.s:c.text);
+  return '<div class="chip'+(k==="neg"?" n":(k==="face"?" fc":""))+(g&&!g.full?" nogloss":"")+'" data-c="'+esc(c.cid)+'" data-k="'+k+'" title="'+esc(c.text)+'">'+
+    (c.nl?'<span class="nlb">文</span>':"")+'<span class="cl"><span class="cn">'+esc(main)+'</span>'+
+    (main!==c.text?'<span class="ce">'+esc(c.text)+'</span>':"")+'</span>'+
     (c.w!==1?'<span class="w">×'+c.w.toFixed(2)+'</span>':"")+
     '<button class="wbtn" data-a="dn" title="重みを下げる">−</button>'+
     '<button class="wbtn" data-a="up" title="重みを上げる">＋</button>'+
@@ -1442,9 +1677,16 @@ function zoneHTML(k,label,arr,empty){
     '<div class="chips" data-k="'+k+'">'+(arr.length?arr.map(function(c){return chipHTML(c,k)}).join(""):
       '<span class="hint" style="padding:6px">'+esc(empty)+'</span>')+'</div></div>';
 }
+// 出力欄の下の訳（textarea の中身は変えない）。訳が1つもなければ出さない
+function outGloss(b){
+  if(!S.cfg.showGloss||!b.a.plain)return "";
+  var g=glossInfo(b.a.plain,false);
+  return g.any?'<div class="outGloss">'+esc(g.s)+'</div>':"";
+}
 function unselText(a){return a.map(function(n){return "キャラ"+n}).join("・")}
 function updateOut(){
   var o=compose();S.out=o;
+  $("#showGloss").checked=!!S.cfg.showGloss;
   var n=S.comp.chars.filter(Boolean).length;
   $("#outBox").innerHTML=(o.unsel.length?'<div class="outWarn" role="status"><span aria-hidden="true">⚠</span><span><b>'+
       esc(unselText(o.unsel))+'はキャラが未選択です。</b>シチュエーションの状態と想定の性別だけで出力しています'+
@@ -1454,7 +1696,7 @@ function updateOut(){
       (b.warn?'<span class="warnb">キャラ未選択を含む</span>':'')+
       '<span class="grow"></span><span class="hint">'+esc(hintFor(b.a,o.svc))+'</span>'+
       '<button class="btn mini" data-cp="'+i+'">コピー</button></div>'+
-      '<textarea class="out'+(b.sm?" sm":"")+'" readonly>'+esc(b.a.out)+'</textarea></div>';
+      '<textarea class="out'+(b.sm?" sm":"")+'" readonly>'+esc(b.a.out)+'</textarea>'+outGloss(b)+'</div>';
   }).join("")+(o.svc==="pixai"&&n>1?
     '<p class="hint" style="margin:0 0 8px">PixAI では全キャラのタグが1本にまとまるため、どのタグがどのキャラに効くかは指定できません。</p>':"");
   var wd=workDirty();
@@ -1657,7 +1899,9 @@ function stamp(t){
 }
 function backupJSON(d){
   if(d.sits||d.tabs)return JSON.stringify(d,null,1); // 移行前データはそのまま
-  return JSON.stringify({v:3,prompts:d.prompts,cats:d.cats,comp:d.comp},null,1);
+  var o={v:3,prompts:d.prompts,cats:d.cats,comp:d.comp};
+  if(d.dict)o.dict=d.dict;
+  return JSON.stringify(o,null,1);
 }
 
 /* ---------- 取り込み ---------- */
@@ -1787,9 +2031,12 @@ function readFile(f){
         if(!Array.isArray(raw))throw 0;
         var u=upgrade(d);
         if(!u.prompts.length){toast("このJSONには読み取れる項目がありません");return}
-        S.pending={rows:u.prompts,isBackup:true,cats:u.cats,comp:u.comp};
+        var gl=collectJa(d);
+        if(u.dict)Object.keys(u.dict).forEach(function(k){gl.unshift([k,u.dict[k]])});
+        S.pending={rows:u.prompts,isBackup:true,cats:u.cats,comp:u.comp,dict:uniqPairs(gl)};
         var ns=u.prompts.filter(function(p){return p.kind==="sit"}).length,nc=u.prompts.filter(function(p){return p.kind==="char"}).length;
         openImport("バックアップJSON："+u.prompts.length+" 件（うちシチュエーション "+ns+"・キャラ "+nc+"）"+
+          (S.pending.dict.length?"・訳 "+S.pending.dict.length+" 件":"")+
           (u.legacy?"。旧形式のシチュエーション・キャラは一覧の項目に変換しました":"")+"。");
       }catch(e){toast("このJSONは読み込めません")}
     };
@@ -1813,12 +2060,13 @@ function readFile(f){
   r.readAsArrayBuffer(f);
 }
 function snapshot(){
-  return JSON.parse(JSON.stringify({prompts:S.prompts,cats:S.cats,comp:S.comp}));
+  return JSON.parse(JSON.stringify({prompts:S.prompts,cats:S.cats,comp:S.comp,dict:S.dict}));
 }
 function restoreSnap(s){
   var u=upgrade(s);
   S.prompts=u.prompts;S.cats=u.cats;
   if(u.comp)S.comp=u.comp;
+  if(u.dict)S.dict=u.dict;
   syncCats();S.sel={};
 }
 function dupKey(p){return p.kind+"\u0000"+(p.kind==="sit"||p.kind==="char"?p.name+"\u0000":"")+p.text}
@@ -1826,6 +2074,7 @@ function applyImport(replace){
   var p=S.pending;if(!p)return;
   var rows=p.rows.filter(function(r,i){return p.sel[i]});
   if(!rows.length){toast("取り込む項目を選んでください");return}
+  var gl=null;
   if(replace){
     var snap=snapshot();
     S.bak={at:Date.now(),data:snap};
@@ -1836,8 +2085,9 @@ function applyImport(replace){
       if(p.comp)S.comp=p.comp;
     }
     S.sel={};
+    gl=p.dict&&p.dict.length?dictMerge(p.dict,false):null; // 辞書は置き換えずに足す（snapshot は足す前のもの）
     setUndo("全置換を取り消しました",function(){restoreSnap(snap)});
-    toast(S.prompts.length+" 件に置き換えました","元に戻す");
+    toast(S.prompts.length+" 件に置き換えました"+glossNote(gl),"元に戻す");
   }else{
     // 選んだ項目はすべて追加する（登録済みでも、選んだ場合は重複して登録する）
     // 新しいIDを振り、ファイル内のシチュエーション・キャラのチップが指す元の項目も付け替える
@@ -1848,7 +2098,8 @@ function applyImport(replace){
       if(r.kind==="sit"){fix(r.base);fix(r.neg);(r.slots||[]).forEach(fix);(r.slotFaces||[]).forEach(fix)}
       if(r.kind==="char"){fix(r.look);fix(r.outfit)}
     });
-    toast(rows.length+" 件追加しました"+(nd?"（うち登録済みと同じ内容 "+nd+" 件）":""));
+    gl=p.dict&&p.dict.length?dictMerge(p.dict,false):null;
+    toast(rows.length+" 件追加しました"+(nd?"（うち登録済みと同じ内容 "+nd+" 件）":"")+glossNote(gl));
   }
   syncCats();
   S.pending=null;$("#mImp").classList.remove("on");render();save();
@@ -1869,7 +2120,37 @@ function sheetRows(){
       "順番":sit&&p.folder?p.order:""};
   });
 }
+var MUSE_REQ=[
+'画像生成AI用のプロンプトを、次の JSON の形で作ってください。返答は JSON だけにしてください。',
+'',
+'{',
+' "v": 3,',
+' "prompts": [',
+'  {"kind":"sit","name":"シチュエーションの名前（日本語）","folder":"連続したシーンならフォルダ名（任意）","order":1,',
+'   "base":[{"text":"英語のタグ","ja":"日本語の訳"}],',
+'   "neg":[{"text":"英語のタグ","ja":"日本語の訳"}],',
+'   "slots":[[{"text":"キャラ1の状態のタグ","ja":"訳"}]],',
+'   "slotFaces":[[{"text":"キャラ1の表情のタグ","ja":"訳"}]],',
+'   "slotSex":["girl"],',
+'   "slotLines":["キャラ1のセリフ（任意）"]},',
+'  {"kind":"char","name":"キャラの名前","sex":"girl",',
+'   "look":[{"text":"外見のタグ","ja":"訳"}],',
+'   "outfit":[{"text":"服装のタグ","ja":"訳"}]},',
+'  {"kind":"face","name":"表情の名前","text":"smile, blush","ja":"笑顔、赤面"},',
+'  {"kind":"pos","name":"名前","text":"masterpiece","ja":"傑作"},',
+'  {"kind":"neg","name":"名前","text":"lowres","ja":"低解像度"}',
+' ]',
+'}',
+'',
+'決まり：',
+'- タグは1つずつ {"text","ja"} に分けてください。ja は短い日本語にしてください。',
+'- kind は sit（シチュエーション）、char（キャラ）、face（表情）、pos（ポジティブ）、neg（ネガティブ）のどれかです。',
+'- sex は girl / boy / other です。',
+'- slots・slotFaces・slotSex・slotLines は、キャラ1、キャラ2…の順に並べてください。',
+'- 重みを付けるときは "w":1.2 を足してください（0.1〜2.0）。',
+'- 文章で書く部分は "nl":true を足してください。'].join("\n");
 function expo(kind){
+  if(kind==="muse"){copy(MUSE_REQ,"Muse への依頼文をコピーしました");return}
   if(kind==="json"){
     dl("prompt-library-"+stamp()+".json",backupJSON(S),"application/json");
     toast("JSONを保存しました");return;
@@ -2190,7 +2471,13 @@ $("#dock").addEventListener("click",function(e){
   b=e.target.closest("[data-cp]");
   if(b){var bx=S.out&&S.out.boxes[+b.dataset.cp];
     if(bx)copy(bx.a.out,bx.warn?"コピーしました（"+unselText(S.out.unsel)+"はキャラが未選択です）":"");return}
-  var act=e.target.closest(".chip [data-a]");if(!act)return;
+  var act=e.target.closest(".chip [data-a]");
+  if(!act){
+    var ch=e.target.closest(".chip");
+    if(ch&&Date.now()-dragEnd>500)openGloss(ch,e);
+    return;
+  }
+  hideGloss();
   var f=findChip(act.closest(".chip").dataset.c);if(!f)return;
   var a=act.dataset.a,st=parseFloat(S.cfg.step);
   if(a==="rm")f.arr.splice(f.i,1);
@@ -2239,8 +2526,48 @@ $("#dlTxt").addEventListener("click",function(){
   toast(o.unsel.length?".txtを保存しました（"+unselText(o.unsel)+"はキャラが未選択です）":".txtを保存しました");
 });
 
+/* チップをタップ：訳の小窓 */
+var gpEv=null,gpCid=null,gpAt=0;
+function hideGloss(){gpCid=null;$("#glossPop").classList.remove("on")}
+function openGloss(chipEl,ev){
+  var f=findChip(chipEl.dataset.c),m=$("#glossPop");if(!f)return;
+  if(m.classList.contains("on")&&gpCid===f.c.cid){hideGloss();return}
+  var c=f.c,seen=Object.create(null),h="";
+  glossTokens(c.text,c.nl).forEach(function(t){
+    var k=tokKey(t.en);if(!k||seen[k])return;seen[k]=1;
+    h+='<div class="gpRow"><div class="gpEn">'+esc(t.en)+'</div>'+
+      '<input class="fld" data-gk="'+esc(t.en)+'" value="'+esc(t.ja)+'" maxlength="'+GLOSS_LEN+'" placeholder="日本語の訳" aria-label="'+esc(t.en)+' の日本語の訳">'+
+      '<div class="gpLinks"><a class="btn" href="'+esc("https://translate.google.com/?sl=en&tl=ja&op=translate&text="+encodeURIComponent(t.en))+
+        '" target="_blank" rel="noopener noreferrer">Google 翻訳で開く</a>'+
+      (c.nl?"":'<a class="btn" href="'+esc("https://danbooru.donmai.us/wiki_pages/"+encodeURIComponent(k.replace(/ /g,"_")))+
+        '" target="_blank" rel="noopener noreferrer">Danbooru の解説を開く</a>')+'</div></div>';
+  });
+  if(!h)return;
+  gpCid=c.cid;gpEv=ev;gpAt=Date.now();
+  m.innerHTML=h;m.classList.add("on");
+  var r=chipEl.getBoundingClientRect(),rr=m.getBoundingClientRect();
+  var top=r.bottom+6;if(top+rr.height>window.innerHeight-8)top=Math.max(8,r.top-rr.height-6);
+  m.style.top=top+"px";m.style.left=Math.max(8,Math.min(r.left,window.innerWidth-rr.width-8))+"px";
+  if(window.matchMedia&&window.matchMedia("(pointer:fine)").matches){var i=m.querySelector("input");if(i)setTimeout(function(){i.focus()},20)}
+}
+$("#glossPop").addEventListener("change",function(e){
+  var i=e.target.closest("[data-gk]");if(!i)return;
+  if(!dictSet(i.dataset.gk,i.value))toast("辞書がいっぱいです（上限 "+DICT_MAX+" 件）");
+  render();save();
+});
+document.addEventListener("click",function(e){
+  if(e===gpEv||e.target.closest("#glossPop"))return;
+  hideGloss();
+});
+$("#dock").addEventListener("scroll",function(){
+  var a=document.activeElement;
+  if(Date.now()-gpAt<500||(a&&a.closest&&a.closest("#glossPop")))return; // 開いた直後のスクロール（見える位置への移動）は無視
+  hideGloss();
+},{passive:true});
+$("#showGloss").addEventListener("change",function(){S.cfg.showGloss=this.checked;updateOut();save()});
+
 /* 並べ替え：マウスはドラッグ、タッチは長押ししてから移動 */
-var drag=null;
+var drag=null,dragEnd=0;
 function moveChip(cid,k,overCid,after){
   var f=findChip(cid),dest=zoneArr(k);if(!f||!dest)return;
   var i,item=f.arr.splice(f.i,1)[0],at=dest.length;
@@ -2253,7 +2580,7 @@ function zoneAt(x,y){
 }
 function clearOver(){document.querySelectorAll(".chips.over").forEach(function(z){z.classList.remove("over")})}
 function dragBegin(){
-  var d=drag;d.active=true;
+  var d=drag;d.active=true;hideGloss();
   var r=d.el.getBoundingClientRect();
   d.ox=d.x-r.left;d.oy=d.y-r.top;
   var g=d.el.cloneNode(true);
@@ -2272,6 +2599,7 @@ function dragFinish(drop){
   var d=drag;if(!d)return;
   clearTimeout(d.timer);drag=null;
   if(!d.active)return;
+  dragEnd=Date.now(); // ドラッグ直後の click では訳の小窓を開かない
   if(d.ghost)d.ghost.remove();
   clearOver();
   if(drop){
@@ -2611,7 +2939,7 @@ document.querySelectorAll(".modal").forEach(function(m){
   m.addEventListener("click",function(e){if(e.target===m)m.classList.remove("on")})});
 document.addEventListener("keydown",function(e){
   if(e.key==="Escape"){document.querySelectorAll(".modal.on").forEach(function(m){m.classList.remove("on")});
-    $("#expMenu").classList.remove("on")}
+    $("#expMenu").classList.remove("on");hideGloss()}
   if((e.ctrlKey||e.metaKey)&&e.key==="k"){e.preventDefault();showView(1);$("#q").focus();$("#q").select()}
   if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="z"){
     var t=e.target.tagName;
@@ -2711,7 +3039,7 @@ $("#bSet").addEventListener("click",function(){
   $("#sAuto").checked=S.cfg.auto;$("#sPxJoin").value=S.cfg.pxJoin;$("#sLinks").value=linksText();
   $("#sStep").value=String(S.cfg.step);
   $("#sFmt").value=S.cfg.naiFmt;$("#sSep").value=(S.cfg.sep===",\n")?",\\n":S.cfg.sep;
-  renderCatMgr();renderBak();renderLibInfo();
+  renderCatMgr();renderBak();renderLibInfo();renderDictInfo();
   $("#mSet").classList.add("on");
 });
 $("#sDup").addEventListener("change",function(){S.cfg.dup=this.checked;save()});
@@ -2735,6 +3063,94 @@ $("#sLinks").addEventListener("change",function(){
 $("#sPxJoin").addEventListener("change",function(){S.cfg.pxJoin=this.value;updateOut();save()});
 $("#sSep").addEventListener("change",function(){
   S.cfg.sep=(this.value===",\\n")?",\n":this.value;updateOut();save()});
+
+/* ---------- 訳の辞書の画面 ---------- */
+var dictRows=[],dictMode="all";
+function renderDictInfo(){
+  $("#dictInfo").textContent="登録 "+dictCount()+" 件 ／ 未訳のタグ "+untransTags().length+" 個";
+}
+// 辞書のタグと一覧の未訳のタグを合わせて、英語順に並べる
+function buildDictRows(){
+  var seen=Object.create(null),a=Object.keys(S.dict).concat(untransTags());
+  dictRows=a.filter(function(k){if(seen[k])return false;seen[k]=1;return true}).sort(function(x,y){return x<y?-1:(x>y?1:0)});
+}
+function renderDict(){
+  var q=$("#dictQ").value.trim().toLowerCase().split(/\s+/).filter(Boolean),un=dictMode==="un",n=0,h="",total=0;
+  document.querySelectorAll("#dictMode [data-dm]").forEach(function(b){b.classList.toggle("on",b.dataset.dm===dictMode)});
+  dictRows.forEach(function(k){
+    var ja=hasOwn(S.dict,k)?S.dict[k]:"";
+    if(un&&ja)return;
+    if(q.length){var hay=(k+" "+ja).toLowerCase();for(var i=0;i<q.length;i++)if(hay.indexOf(q[i])<0)return}
+    total++;
+    if(n>=200)return;n++;
+    h+='<div class="dRow"><span class="dEn">'+esc(k)+'</span>'+
+      '<input class="fld" data-dk="'+esc(k)+'" value="'+esc(ja)+'" maxlength="'+GLOSS_LEN+'" placeholder="日本語の訳" aria-label="'+esc(k)+' の日本語の訳">'+
+      '<button class="ico" data-dd="'+esc(k)+'" title="訳を削除" aria-label="'+esc(k)+' の訳を削除">×</button></div>';
+  });
+  if(total>n)h+='<div class="hint" style="padding:10px 12px;border-top:1px solid var(--rule)">'+total+' 件中 '+n+' 件を表示しています。検索で絞り込んでください。</div>';
+  $("#dictList").innerHTML=h||'<div class="empty" style="padding:28px 12px">条件に合うタグがありません。</div>';
+  $("#dictCount").textContent="登録 "+dictCount()+" 件 ／ 未訳のタグ "+untransTags().length+" 個";
+}
+function openDict(){
+  buildDictRows();dictMode="all";$("#dictQ").value="";
+  renderDict();$("#mDict").classList.add("on");
+}
+$("#dOpen").addEventListener("click",openDict);
+$("#dictQ").addEventListener("input",renderDict);
+$("#dictMode").addEventListener("click",function(e){
+  var b=e.target.closest("[data-dm]");if(!b)return;dictMode=b.dataset.dm;renderDict();
+});
+$("#dictList").addEventListener("change",function(e){
+  var i=e.target.closest("[data-dk]");if(!i)return;
+  if(!dictSet(i.dataset.dk,i.value)){toast("辞書がいっぱいです（上限 "+DICT_MAX+" 件）");i.value=glossOf(i.dataset.dk)}
+  $("#dictCount").textContent="登録 "+dictCount()+" 件 ／ 未訳のタグ "+untransTags().length+" 個";
+  renderDictInfo();render();save();
+});
+$("#dictList").addEventListener("click",function(e){
+  var b=e.target.closest("[data-dd]");if(!b)return;
+  dictSet(b.dataset.dd,"");buildDictRows();renderDict();renderDictInfo();render();save();
+});
+$("#dCopy").addEventListener("click",function(){
+  var a=untransTags().slice(0,UNTRANS_MAX);
+  if(!a.length){toast("未訳のタグはありません");return}
+  copy(['次の英語のタグ（画像生成AI用）を日本語に訳してください。',
+    '返答は JSON だけにしてください。形は {"英語のタグ":"日本語の訳"} です。',
+    '訳は短い言葉にしてください（例："silver hair":"銀髪"）。','',a.join("\n")].join("\n"),
+    "未訳のタグ "+a.length+" 個をコピーしました。Muse に貼って、返ってきた JSON を『訳を貼り付けて取り込む』に入れてください");
+});
+$("#dPasteGo").addEventListener("click",function(){
+  var t=$("#dPaste").value;
+  if(!t.trim()){toast("貼り付ける内容がありません");return}
+  var r=parseDictText(t),m=dictMerge(r.pairs,true);
+  renderDictInfo();render();save();
+  if(m.put)$("#dPaste").value="";
+  toast("訳 "+m.put+" 件を取り込みました（読めなかった行 "+r.bad+"）"+(m.over?"。辞書が上限のため "+m.over+" 件は入れられませんでした":""));
+});
+$("#dFile").addEventListener("click",function(){$("#dfile").click()});
+$("#dfile").addEventListener("change",function(){
+  var f=this.files[0];this.value="";if(!f)return;
+  var rd=new FileReader();
+  rd.onload=function(){
+    var r=/\.csv$/i.test(f.name)?parseDictCsv(rd.result,","):(/\.tsv$/i.test(f.name)?parseDictCsv(rd.result,"\t"):parseDictText(rd.result));
+    var cut=0,pairs=r.pairs;
+    if(pairs.length>DICT_FILE_MAX){ // 大きいファイルは、一覧で使っているタグに当たる分だけ入れる
+      var use=Object.create(null);
+      eachLibTag(function(k){use[k]=1});
+      cut=pairs.length;
+      pairs=pairs.filter(function(x){return use[tokKey(str(x[0]))]});
+    }
+    var m=dictMerge(pairs,false);
+    renderDictInfo();render();save();
+    toast((cut?"ファイルが "+DICT_FILE_MAX+" 件を超えているため、一覧で使っているタグに当たる "+pairs.length+" 件（全 "+cut+" 件中）だけを読みました。":"")+
+      "訳 "+m.put+" 件を取り込みました（すでにある "+m.kept+" 件はそのまま・読めなかった行 "+r.bad+"）"+(m.over?"。辞書が上限のため "+m.over+" 件は入れられませんでした":""));
+  };
+  rd.readAsText(f);
+});
+$("#dExp").addEventListener("click",function(){
+  if(!dictCount()){toast("辞書は空です");return}
+  dl("prompt-dict-"+stamp()+".json",JSON.stringify(S.dict,null,1),"application/json");
+  toast("辞書を保存しました");
+});
 
 /* ---------- 画面タブ（プロンプト / 絞り込み / 組み立て） ---------- */
 // PC（幅1100px以上）では組み立てを右側に常に表示するので、左側は一覧か絞り込みのどちらかにする
@@ -2793,9 +3209,10 @@ $("#fGo").addEventListener("click",function(){showView(1)});
   $("#storeInfo").textContent="いまの保存先："+lab[MODE];
 })();
 S.comp=normComp(null);
-Promise.all([store.get(K_LIB),store.get(K_MEM),store.get(K_CFG),store.get(K_BAK),store.get(K_CMP2),store.get(K_CMP),store.get(K_MIG)]).then(function(r){
+Promise.all([store.get(K_LIB),store.get(K_MEM),store.get(K_CFG),store.get(K_BAK),store.get(K_CMP2),store.get(K_CMP),store.get(K_MIG),store.get(K_DICT)]).then(function(r){
   var lib=r[0]||{},mem1=r[1],c2=r[4],c3=r[5];
   normCfg(r[2]);
+  S.dict=normDict(r[7]);
   if(r[3]&&r[3].data)S.bak=r[3];
   if(r[6]&&r[6].data)S.mig=r[6];
   var migrated=false;
