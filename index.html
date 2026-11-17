@@ -396,6 +396,18 @@
   .bkNote .bkTx{flex:1 1 280px; min-width:0}
   .bkNote .bkBtns{display:flex; gap:8px; margin-left:auto}
   .bkNote .btn{min-height:36px}
+  #stNote.hi{background:var(--neg-bg); border-bottom-color:var(--neg-line); color:#7A1F33}
+  .stBox{margin:2px 0 14px; padding:10px 12px; border:1px solid var(--rule); border-radius:10px; background:var(--wash)}
+  .stHead{display:flex; align-items:baseline; gap:2px 10px; flex-wrap:wrap; margin-bottom:6px}
+  .stHead b{white-space:nowrap}
+  .stHead span{font-variant-numeric:tabular-nums; color:var(--ink2); font-size:13px}
+  .stBar{height:10px; border-radius:6px; background:var(--wash2); overflow:hidden; margin-bottom:8px}
+  .stBar i{display:block; height:100%; width:0; background:var(--pos); border-radius:6px}
+  .stBar.mid i{background:var(--char)} .stBar.hi i{background:var(--neg)}
+  .stRow{display:flex; align-items:center; gap:8px; padding:4px 0; font-size:13.5px; border-top:1px solid var(--rule)}
+  .stRow:first-child{border-top:0}
+  .stRow .sl{flex:1; min-width:0}
+  .stRow .sn{color:var(--ink2); font-variant-numeric:tabular-nums; white-space:nowrap}
   .seq{display:none; flex:none; background:var(--sheet); border-top:1px solid var(--rule); box-shadow:0 -4px 14px rgba(28,38,51,.08); padding:5px 12px 6px}
   .seq.on{display:block}
   .seqList{display:flex; gap:6px; overflow-x:auto; scrollbar-width:none; margin-bottom:4px}
@@ -508,6 +520,7 @@
 
   <div id="warn" class="warn"></div>
   <div id="bkNote" class="warn bkNote" role="status"></div>
+  <div id="stNote" class="warn bkNote" role="status"></div>
 
   <nav class="mtabs" id="mtabs">
     <button class="mtab on" data-v="1">プロンプト</button>
@@ -608,6 +621,7 @@
         <button class="btn mini" id="wSave">上書き保存</button>
         <button class="btn mini" id="wSaveAs">別件として保存</button>
         <button class="btn mini" id="wRevert">元に戻す</button>
+        <button class="btn mini" id="wMuse" title="いま組み立てているシチュエーションを、Muse に直してもらうための文にしてコピーします">Muse 用にコピー</button>
         <button class="btn mini danger" id="wClear">空にする</button>
       </div>
       <div class="folderBar" id="folderBar"></div>
@@ -643,6 +657,7 @@
           <button class="btn mini" id="cSave">上書き保存</button>
           <button class="btn mini" id="cSaveAs">別件として保存</button>
           <button class="btn mini" id="cRevert">元に戻す</button>
+          <button class="btn mini" id="cMuse" title="いま表示しているキャラを、Muse に直してもらうための文にしてコピーします">Muse 用にコピー</button>
         </div>
         <div id="charZones"></div>
       </div>
@@ -817,6 +832,12 @@
   <p class="note" id="storeInfo"></p>
   <p class="note">データはこのアプリ内に自動保存されます。念のため、ときどきJSONで書き出して手元に残してください。</p>
   <p class="note" id="bkInfo"></p>
+  <div class="stBox" id="stBox">
+    <div class="stHead"><b>保存容量</b><span id="stPct"></span></div>
+    <div class="stBar" role="img" id="stBar" aria-label="保存容量の使用量"><i id="stFill"></i></div>
+    <div id="stRows"></div>
+    <div class="hint" id="stHint"></div>
+  </div>
   <div id="migBox" style="display:none;margin-bottom:10px">
     <p class="note" id="migInfo" style="margin-bottom:6px"></p>
     <button class="btn mini" id="migSave">移行前のデータをJSONで保存</button>
@@ -927,16 +948,20 @@ var failAt=0;
 function saveFail(){
   if(Date.now()-failAt<8000)return;
   failAt=Date.now();
-  toast("保存に失敗しました。容量不足などの可能性があります。「書き出し」→ JSONバックアップを保存してください");
+  toast("保存に失敗しました。容量不足などの可能性があります。「書き出し」→ JSONバックアップを保存し、設定の「保存容量」で内訳を確認してください");
 }
+// 最後に保存した（または読み込んだ）文字列。中身が変わっていない項目は書き込まない
+// （容量が上限に近いとき、変わっていない大きなデータを毎回書き直すと、ページを離れる瞬間の書き込みで
+//  保存データが消えることがあるため。設定を1つ変えただけで登録項目や辞書を書き直さないようにする）
+var lastW={};
 var store={
   get:function(k){
     if(MODE==="claude"){
       return Promise.resolve().then(function(){return window.storage.get(k)})
-        .then(function(r){return r?JSON.parse(r.value):null}).catch(function(){return null});
+        .then(function(r){if(r)lastW[k]=r.value;return r?JSON.parse(r.value):null}).catch(function(){return null});
     }
     if(MODE==="local"){
-      try{var v=LS.getItem(k);return Promise.resolve(v?JSON.parse(v):null)}
+      try{var v=LS.getItem(k);lastW[k]=v;return Promise.resolve(v?JSON.parse(v):null)}
       catch(e){return Promise.resolve(null)}
     }
     return Promise.resolve(mem[k]||null);
@@ -944,11 +969,15 @@ var store={
   set:function(k,v){
     mem[k]=v;
     if(MODE==="claude"){
-      return Promise.resolve().then(function(){return window.storage.set(k,JSON.stringify(v))})
-        .then(function(r){if(r===null||r===false)saveFail()},function(){saveFail()});
+      var jc=JSON.stringify(v);
+      if(lastW[k]===jc)return Promise.resolve();
+      return Promise.resolve().then(function(){return window.storage.set(k,jc)})
+        .then(function(r){if(r===null||r===false)saveFail();else lastW[k]=jc},function(){saveFail()});
     }
     if(MODE==="local"){
-      try{LS.setItem(k,JSON.stringify(v))}catch(e){saveFail()}
+      var j=JSON.stringify(v);
+      if(lastW[k]===j)return Promise.resolve();
+      try{LS.setItem(k,j);lastW[k]=j}catch(e){saveFail()}
     }
     return Promise.resolve();
   }
@@ -972,7 +1001,7 @@ var S={
   prompts:[], cats:DEFCATS.slice(), dict:{},
   comp:null,
   cfg:{dup:false,step:0.05,naiFmt:"nai4",sep:", ",dedup:true,escp:true,auto:true,pxJoin:"comma",links:null,showGloss:true,
-    fold:{sit:false,char:false,out:false},lastBackup:0,bkSnooze:0},
+    fold:{sit:false,char:false,out:false},lastBackup:0,bkSnooze:0,stSnooze:0},
   f:{kind:"all",cats:[],tags:[],tagMode:"and",q:""},
   openF:{},
   sort:"new", editing:null, pending:null, sel:{}, undo:null, bak:null, mig:null, out:null
@@ -1005,6 +1034,7 @@ function doSave(){
   store.set(K_CMP,{comp:S.comp});
   store.set(K_CFG,S.cfg);
   store.set(K_DICT,S.dict);
+  calcUsage();renderStNote();
 }
 function save(){dirty=true;clearTimeout(sq);sq=setTimeout(doSave,350)}
 function flush(){if(dirty){clearTimeout(sq);doSave()}}
@@ -1174,7 +1204,7 @@ function normCfg(c){
   if(Array.isArray(c.links))d.links=normLinks(c.links);
   if(typeof c.showGloss==="boolean")d.showGloss=c.showGloss;
   if(c.fold&&typeof c.fold==="object")["sit","char","out"].forEach(function(k){if(typeof c.fold[k]==="boolean")d.fold[k]=c.fold[k]});
-  ["lastBackup","bkSnooze"].forEach(function(k){var v=Number(c[k]);if(isFinite(v)&&v>0)d[k]=v});
+  ["lastBackup","bkSnooze","stSnooze"].forEach(function(k){var v=Number(c[k]);if(isFinite(v)&&v>0)d[k]=v});
 }
 function emptyWork(){return {from:null,name:"",base:[],neg:[],free:"",slots:[],slotFaces:[],slotSex:[],slotLines:[],slotBubbles:[],noOutfit:false}}
 function normWork(w){
@@ -1418,9 +1448,10 @@ function compose(){
   var charLabel=function(x){return "キャラ"+(x.i+1)+(x.c?"："+x.c.name:"（未選択）")};
   var boxes=[];
   if(svc==="nai"){
+    // NovelAI の入力画面と同じ並び：ベース → 除外したい要素（ネガティブ）→ キャラ1…
     boxes.push({label:"ベースプロンプト",a:assemble(base,fmt,{drop:drop}),key:"base",nm:"ベース"});
-    cs.forEach(function(x){boxes.push({label:charLabel(x),a:assemble(charItems(x),fmt,{drop:drop}),sm:true,warn:!x.c,key:"c"+x.i,nm:"キャラ"+(x.i+1),unsel:!x.c})});
     boxes.push({label:"除外したい要素（ネガティブ）",a:assemble(w.neg,fmt),neg:true,sm:true,key:"neg",nm:"ネガ"});
+    cs.forEach(function(x){boxes.push({label:charLabel(x),a:assemble(charItems(x),fmt,{drop:drop}),sm:true,warn:!x.c,key:"c"+x.i,nm:"キャラ"+(x.i+1),unsel:!x.c})});
   }else{
     // ベース → キャラ1 → キャラ2 … の順に1本にする（重複判定は全体で共有）
     var seen={},segs=[assemble(base,fmt,{drop:drop,seen:seen})];
@@ -2805,6 +2836,7 @@ function copyAll(after){
 $("#cpAll").addEventListener("click",function(){copyAll()});
 /* 順番コピー：欄ごとに、コピーしたときの文字列を覚えて、いまの出力と同じなら ✓（保存はしない） */
 var seqDone={};
+// 順番コピーの並びは出力欄の並び（NovelAI：ベース → ネガ → キャラ、PixAI：プロンプト → ネガ）と同じ
 function seqBoxes(){return S.out?S.out.boxes.filter(function(b){return b.a.out}):[]}
 function seqIs(b){return seqDone[b.key]===b.a.out}
 function renderSeq(){
@@ -3112,8 +3144,8 @@ function museEntry(p){
   }
   return o;
 }
-function museText(p){
-  return ['次の JSON は、画像生成AI用プロンプトの登録データです。',
+function museText(p,what){
+  return ['次の JSON は、画像生成AI用プロンプトの'+(what||'登録データ')+'です。',
     '下の「直したい内容」に沿って直し、同じ形の JSON だけを返してください。',
     '"name" は変えないでください（同じ名前の項目を上書きするためです）。',
     'タグは1つずつ {"text":"英語のタグ","ja":"日本語の訳"} に分けてください。','',
@@ -3121,6 +3153,30 @@ function museText(p){
     JSON.stringify({v:3,prompts:[museEntry(p)]},null,1)].join("\n");
 }
 $("#eClose").addEventListener("click",function(){$("#mEdit").classList.remove("on")});
+// 組み立て中の内容（未保存の変更を含む）を、Muse に渡す1件分のデータにする
+function museMsg(known){return "Muse 用にコピーしました。Muse に貼って、直したい内容を伝えてください"+(known?"":"（まだ登録していないので、取り込むと新しい項目になります）")}
+function workMuse(){
+  var w=W(),src=byId(w.from),known=!!(src&&src.kind==="sit"),sp=slotPair(w);
+  var base=w.base.concat(textToChips(w.free));
+  var n=Math.max(sp.slots.length,S.comp.lines.length),lines=[],bub=[],i;
+  for(i=0;i<n;i++){lines.push(str(S.comp.lines[i]).trim());bub.push(S.comp.bubbles[i]!==false)}
+  var e={kind:"sit",name:w.name||"新しいシチュエーション",cat:known?src.cat:CAT_SIT,tags:known?src.tags:[],note:known?src.note:"",
+    folder:known?src.folder:"",order:known?src.order:0,base:base,neg:w.neg,slots:sp.slots,slotFaces:sp.slotFaces,slotSex:sp.slotSex,
+    slotLines:lines,slotBubbles:bub,noOutfit:w.noOutfit};
+  if(!e.base.length&&!e.neg.length&&!slotCount(e)&&!lineCountOf(e))return null;
+  return {e:e,known:known};
+}
+$("#wMuse").addEventListener("click",function(){
+  var r=workMuse();
+  if(!r){toast("組み立て中のシチュエーションが空です");return}
+  copy(museText(r.e,"いま組み立て中の内容"),museMsg(r.known));
+});
+$("#cMuse").addEventListener("click",function(){
+  var c=curChar();
+  if(!c){toast("キャラが入っていません");return}
+  var src=byId(c.from),known=!!(src&&src.kind==="char");
+  copy(museText({kind:"char",name:c.name,cat:known?src.cat:CAT_CHAR,tags:known?src.tags:[],note:known?src.note:"",sex:c.sex,look:c.look,outfit:c.outfit},"いま表示中の内容"),museMsg(known));
+});
 $("#eMuse").addEventListener("click",function(){
   var p=S.editing;if(!p||!byId(p.id))return;
   copy(museText(p),"Muse 用にコピーしました。Muse に貼って、直したい内容を伝えてください");
@@ -3442,7 +3498,7 @@ function openRowMenu(btn,p){
   if(m.classList.contains("on")&&rmId===p.id){m.classList.remove("on");return}
   var inF=p.kind==="sit"&&p.folder,all=inF?folderMembers(p.folder):[],ix=all.indexOf(p);
   rmId=p.id;
-  m.innerHTML='<button data-r="fav">'+(p.fav?"お気に入りを外す":"お気に入りにする")+'</button><button data-r="edit">編集</button>'+
+  m.innerHTML='<button data-r="fav">'+(p.fav?"お気に入りを外す":"お気に入りにする")+'</button><button data-r="edit">編集</button><button data-r="muse">Muse 用にコピー</button>'+
     (inF?'<button data-r="up"'+(ix<=0?" disabled":"")+'>前へ</button><button data-r="dn"'+(ix>=all.length-1?" disabled":"")+'>後ろへ</button>':"")+
     '<button class="dng" data-r="del">削除</button>';
   closeMenus();placeMenu(m,btn.getBoundingClientRect());
@@ -3455,6 +3511,7 @@ $("#rowMenu").addEventListener("click",function(e){
   if(!p)return;
   if(a==="fav"){p.fav=!p.fav;renderList();save()}
   else if(a==="edit")openEdit(p);
+  else if(a==="muse")copy(museText(p),museMsg(true));
   else if(a==="del")delPrompts([p.id]);
   else moveScene(p,a==="up"?-1:1);
 });
@@ -3503,6 +3560,63 @@ function renderBak(){
   if(mg)$("#migInfo").textContent="新しい形式（シチュエーション・キャラを一覧の項目にする形）へ移行する前のデータ（"+
     new Date(S.mig.at).toLocaleString("ja-JP")+"）を残しています。このJSONを「取り込み」→「全置換」すると、移行した直後の状態に戻せます。";
 }
+/* 保存容量：保存するデータを文字数に直して数える（ブラウザの保存上限は約500万文字が目安。ブラウザによって違う） */
+var STORE_LIMIT=5000000,STORE_WARN=0.7,STORE_HI=0.9;
+function sz(k,v){try{return k.length+JSON.stringify(v).length}catch(e){return 0}}
+function calcUsage(){
+  var u={lib:sz(K_LIB,{prompts:S.prompts,cats:S.cats}),dict:sz(K_DICT,S.dict),comp:sz(K_CMP,{comp:S.comp})+sz(K_CFG,S.cfg),
+    bak:S.bak?sz(K_BAK,S.bak):0,mig:S.mig?sz(K_MIG,S.mig):0};
+  u.total=u.lib+u.dict+u.comp+u.bak+u.mig;
+  S.usage=u;return u;
+}
+function fmtN(n){return n>=10000?"約 "+(Math.round(n/1000)/10)+" 万文字":n+" 文字"}
+function pctOf(n){return Math.round(n/STORE_LIMIT*1000)/10}
+function renderStorage(){
+  var u=calcUsage(),r=u.total/STORE_LIMIT,pct=Math.min(100,Math.round(r*100));
+  $("#stPct").textContent=fmtN(u.total)+" ／ 目安の上限 約 "+(STORE_LIMIT/10000)+" 万文字（"+pct+"%）";
+  $("#stFill").style.width=Math.min(100,r*100)+"%";
+  $("#stBar").className="stBar"+(r>=STORE_HI?" hi":(r>=STORE_WARN?" mid":""));
+  var rows=[["登録項目（ポジ・ネガ・表情・シチュエーション・キャラ）",u.lib,""],["訳の辞書（"+Object.keys(S.dict).length+" 件）",u.dict,""],["組み立て・設定",u.comp,""],
+    ["全置換する前の控え",u.bak,"bak"],["移行前のデータ",u.mig,"mig"]];
+  $("#stRows").innerHTML=rows.filter(function(x){return x[1]||!x[2]}).map(function(x){
+    return '<div class="stRow"><span class="sl">'+esc(x[0])+'</span><span class="sn">'+fmtN(x[1])+'（'+pctOf(x[1])+'%）</span>'+
+      (x[2]?'<button class="btn mini danger" data-stdel="'+x[2]+'">削除</button>':"")+'</div>';
+  }).join("");
+  $("#stHint").textContent=r>=STORE_WARN?
+    "容量が残り少なくなっています。まず JSON で書き出してから、「全置換する前の控え」「移行前のデータ」を削除し、それでも足りなければ、使わない項目を削除してください。":
+    "上限に近づくと、画面の上に案内が出ます。数字は目安で、実際の上限はブラウザによって違います。";
+  renderStNote();
+}
+$("#stBox").addEventListener("click",function(e){
+  var b=e.target.closest("[data-stdel]");if(!b)return;
+  var k=b.dataset.stdel;
+  if(k==="bak"){
+    if(!confirm("全置換する前の控えを削除します。「全置換する前の状態に戻す」は使えなくなります（JSON で書き出してあれば、そちらは残ります）。よろしいですか？"))return;
+    S.bak=null;store.set(K_BAK,null);renderBak();
+  }else{
+    if(!confirm("移行前のデータを削除します。よろしいですか？"))return;
+    S.mig=null;store.set(K_MIG,null);renderBak();
+  }
+  renderStorage();toast("削除しました");
+});
+// 画面上の案内：7割を超えたら出す（「あとで」で3日間は出さない。9割を超えたら常に出す）
+function renderStNote(){
+  var el=$("#stNote");if(!el)return;
+  var u=S.usage,r=u?u.total/STORE_LIMIT:0,show=!!u&&MODE!=="memory"&&r>=STORE_WARN;
+  if(show&&r<STORE_HI&&S.cfg.stSnooze&&Date.now()-S.cfg.stSnooze<3*86400000)show=false;
+  if(!show){el.style.display="none";return}
+  var hi=r>=STORE_HI;
+  el.className="warn bkNote"+(hi?" hi":"");
+  el.innerHTML='<span class="bkTx">保存容量が'+(hi?"ほぼいっぱいです":"残り少なくなっています")+'（使用量 約 '+Math.round(r*100)+'%）。'+
+    (hi?"保存できなくなる前に、JSON で書き出して、不要なものを整理してください。":"JSON で書き出してから、不要なものを整理してください。")+'</span>'+
+    '<span class="bkBtns"><button class="btn mini" id="stOpen">内訳を見る</button>'+(hi?"":'<button class="btn mini" id="stLater">あとで</button>')+'</span>';
+  el.style.display="flex";
+}
+$("#stNote").addEventListener("click",function(e){
+  var b=e.target.closest("button");if(!b)return;
+  if(b.id==="stOpen"){$("#bSet").click();setTimeout(function(){var x=$("#stBox");if(x&&x.scrollIntoView)x.scrollIntoView({block:"center"})},60)}
+  else if(b.id==="stLater"){S.cfg.stSnooze=Date.now();save();renderStNote()}
+});
 /* バックアップの案内：最後に取った日を覚えて、設定に出し、忘れていそうなときは画面上部に帯を出す */
 function dayDiff(t){
   var a=new Date(t),b=new Date();
@@ -3551,7 +3665,7 @@ $("#bSet").addEventListener("click",function(){
   $("#sAuto").checked=S.cfg.auto;$("#sPxJoin").value=S.cfg.pxJoin;$("#sLinks").value=linksText();
   $("#sStep").value=String(S.cfg.step);
   $("#sFmt").value=S.cfg.naiFmt;$("#sSep").value=(S.cfg.sep===",\n")?",\\n":S.cfg.sep;
-  renderCatMgr();renderBak();renderBkInfo();renderLibInfo();renderDictInfo();
+  renderCatMgr();renderBak();renderBkInfo();renderLibInfo();renderDictInfo();renderStorage();
   $("#mSet").classList.add("on");
 });
 $("#sDup").addEventListener("change",function(){S.cfg.dup=this.checked;save()});
@@ -3748,6 +3862,7 @@ Promise.all([store.get(K_LIB),store.get(K_MEM),store.get(K_CFG),store.get(K_BAK)
   syncCats();
   if(migrated)save();
   render();
+  calcUsage();renderStNote(); // 起動時に使用量を数えて、多ければ案内を出す
   if(migrated)toast("シチュエーションとキャラを一覧の項目に移しました（移行前のデータは設定画面から保存できます）");
 }).catch(function(){render()});
 })();
