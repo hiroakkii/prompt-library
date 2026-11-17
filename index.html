@@ -2805,7 +2805,12 @@ function copyAll(after){
 $("#cpAll").addEventListener("click",function(){copyAll()});
 /* 順番コピー：欄ごとに、コピーしたときの文字列を覚えて、いまの出力と同じなら ✓（保存はしない） */
 var seqDone={};
-function seqBoxes(){return S.out?S.out.boxes.filter(function(b){return b.a.out}):[]}
+// 順番コピーの並び：ベース（PixAI はプロンプト）→ ネガ → キャラ。出力欄の並びは変えない
+function seqRank(b){return b.key==="neg"?1:(b.key.charAt(0)==="c"?2:0)}
+function seqBoxes(){
+  var l=S.out?S.out.boxes.filter(function(b){return b.a.out}):[];
+  return l.map(function(b,i){return {b:b,i:i}}).sort(function(x,y){return seqRank(x.b)-seqRank(y.b)||x.i-y.i}).map(function(x){return x.b});
+}
 function seqIs(b){return seqDone[b.key]===b.a.out}
 function renderSeq(){
   var bx=seqBoxes(),el=$("#seq");
