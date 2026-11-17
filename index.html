@@ -1418,9 +1418,10 @@ function compose(){
   var charLabel=function(x){return "キャラ"+(x.i+1)+(x.c?"："+x.c.name:"（未選択）")};
   var boxes=[];
   if(svc==="nai"){
+    // NovelAI の入力画面と同じ並び：ベース → 除外したい要素（ネガティブ）→ キャラ1…
     boxes.push({label:"ベースプロンプト",a:assemble(base,fmt,{drop:drop}),key:"base",nm:"ベース"});
-    cs.forEach(function(x){boxes.push({label:charLabel(x),a:assemble(charItems(x),fmt,{drop:drop}),sm:true,warn:!x.c,key:"c"+x.i,nm:"キャラ"+(x.i+1),unsel:!x.c})});
     boxes.push({label:"除外したい要素（ネガティブ）",a:assemble(w.neg,fmt),neg:true,sm:true,key:"neg",nm:"ネガ"});
+    cs.forEach(function(x){boxes.push({label:charLabel(x),a:assemble(charItems(x),fmt,{drop:drop}),sm:true,warn:!x.c,key:"c"+x.i,nm:"キャラ"+(x.i+1),unsel:!x.c})});
   }else{
     // ベース → キャラ1 → キャラ2 … の順に1本にする（重複判定は全体で共有）
     var seen={},segs=[assemble(base,fmt,{drop:drop,seen:seen})];
@@ -2805,12 +2806,8 @@ function copyAll(after){
 $("#cpAll").addEventListener("click",function(){copyAll()});
 /* 順番コピー：欄ごとに、コピーしたときの文字列を覚えて、いまの出力と同じなら ✓（保存はしない） */
 var seqDone={};
-// 順番コピーの並び：ベース（PixAI はプロンプト）→ ネガ → キャラ。出力欄の並びは変えない
-function seqRank(b){return b.key==="neg"?1:(b.key.charAt(0)==="c"?2:0)}
-function seqBoxes(){
-  var l=S.out?S.out.boxes.filter(function(b){return b.a.out}):[];
-  return l.map(function(b,i){return {b:b,i:i}}).sort(function(x,y){return seqRank(x.b)-seqRank(y.b)||x.i-y.i}).map(function(x){return x.b});
-}
+// 順番コピーの並びは出力欄の並び（NovelAI：ベース → ネガ → キャラ、PixAI：プロンプト → ネガ）と同じ
+function seqBoxes(){return S.out?S.out.boxes.filter(function(b){return b.a.out}):[]}
 function seqIs(b){return seqDone[b.key]===b.a.out}
 function renderSeq(){
   var bx=seqBoxes(),el=$("#seq");
