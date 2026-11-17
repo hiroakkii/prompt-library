@@ -608,6 +608,7 @@
         <button class="btn mini" id="wSave">上書き保存</button>
         <button class="btn mini" id="wSaveAs">別件として保存</button>
         <button class="btn mini" id="wRevert">元に戻す</button>
+        <button class="btn mini" id="wMuse" title="いま組み立てているシチュエーションを、Muse に直してもらうための文にしてコピーします">Muse 用にコピー</button>
         <button class="btn mini danger" id="wClear">空にする</button>
       </div>
       <div class="folderBar" id="folderBar"></div>
@@ -643,6 +644,7 @@
           <button class="btn mini" id="cSave">上書き保存</button>
           <button class="btn mini" id="cSaveAs">別件として保存</button>
           <button class="btn mini" id="cRevert">元に戻す</button>
+          <button class="btn mini" id="cMuse" title="いま表示しているキャラを、Muse に直してもらうための文にしてコピーします">Muse 用にコピー</button>
         </div>
         <div id="charZones"></div>
       </div>
@@ -3114,8 +3116,8 @@ function museEntry(p){
   }
   return o;
 }
-function museText(p){
-  return ['次の JSON は、画像生成AI用プロンプトの登録データです。',
+function museText(p,what){
+  return ['次の JSON は、画像生成AI用プロンプトの'+(what||'登録データ')+'です。',
     '下の「直したい内容」に沿って直し、同じ形の JSON だけを返してください。',
     '"name" は変えないでください（同じ名前の項目を上書きするためです）。',
     'タグは1つずつ {"text":"英語のタグ","ja":"日本語の訳"} に分けてください。','',
@@ -3123,6 +3125,30 @@ function museText(p){
     JSON.stringify({v:3,prompts:[museEntry(p)]},null,1)].join("\n");
 }
 $("#eClose").addEventListener("click",function(){$("#mEdit").classList.remove("on")});
+// 組み立て中の内容（未保存の変更を含む）を、Muse に渡す1件分のデータにする
+function museMsg(known){return "Muse 用にコピーしました。Muse に貼って、直したい内容を伝えてください"+(known?"":"（まだ登録していないので、取り込むと新しい項目になります）")}
+function workMuse(){
+  var w=W(),src=byId(w.from),known=!!(src&&src.kind==="sit"),sp=slotPair(w);
+  var base=w.base.concat(textToChips(w.free));
+  var n=Math.max(sp.slots.length,S.comp.lines.length),lines=[],bub=[],i;
+  for(i=0;i<n;i++){lines.push(str(S.comp.lines[i]).trim());bub.push(S.comp.bubbles[i]!==false)}
+  var e={kind:"sit",name:w.name||"新しいシチュエーション",cat:known?src.cat:CAT_SIT,tags:known?src.tags:[],note:known?src.note:"",
+    folder:known?src.folder:"",order:known?src.order:0,base:base,neg:w.neg,slots:sp.slots,slotFaces:sp.slotFaces,slotSex:sp.slotSex,
+    slotLines:lines,slotBubbles:bub,noOutfit:w.noOutfit};
+  if(!e.base.length&&!e.neg.length&&!slotCount(e)&&!lineCountOf(e))return null;
+  return {e:e,known:known};
+}
+$("#wMuse").addEventListener("click",function(){
+  var r=workMuse();
+  if(!r){toast("組み立て中のシチュエーションが空です");return}
+  copy(museText(r.e,"いま組み立て中の内容"),museMsg(r.known));
+});
+$("#cMuse").addEventListener("click",function(){
+  var c=curChar();
+  if(!c){toast("キャラが入っていません");return}
+  var src=byId(c.from),known=!!(src&&src.kind==="char");
+  copy(museText({kind:"char",name:c.name,cat:known?src.cat:CAT_CHAR,tags:known?src.tags:[],note:known?src.note:"",sex:c.sex,look:c.look,outfit:c.outfit},"いま表示中の内容"),museMsg(known));
+});
 $("#eMuse").addEventListener("click",function(){
   var p=S.editing;if(!p||!byId(p.id))return;
   copy(museText(p),"Muse 用にコピーしました。Muse に貼って、直したい内容を伝えてください");
@@ -3444,7 +3470,7 @@ function openRowMenu(btn,p){
   if(m.classList.contains("on")&&rmId===p.id){m.classList.remove("on");return}
   var inF=p.kind==="sit"&&p.folder,all=inF?folderMembers(p.folder):[],ix=all.indexOf(p);
   rmId=p.id;
-  m.innerHTML='<button data-r="fav">'+(p.fav?"お気に入りを外す":"お気に入りにする")+'</button><button data-r="edit">編集</button>'+
+  m.innerHTML='<button data-r="fav">'+(p.fav?"お気に入りを外す":"お気に入りにする")+'</button><button data-r="edit">編集</button><button data-r="muse">Muse 用にコピー</button>'+
     (inF?'<button data-r="up"'+(ix<=0?" disabled":"")+'>前へ</button><button data-r="dn"'+(ix>=all.length-1?" disabled":"")+'>後ろへ</button>':"")+
     '<button class="dng" data-r="del">削除</button>';
   closeMenus();placeMenu(m,btn.getBoundingClientRect());
@@ -3457,6 +3483,7 @@ $("#rowMenu").addEventListener("click",function(e){
   if(!p)return;
   if(a==="fav"){p.fav=!p.fav;renderList();save()}
   else if(a==="edit")openEdit(p);
+  else if(a==="muse")copy(museText(p),museMsg(true));
   else if(a==="del")delPrompts([p.id]);
   else moveScene(p,a==="up"?-1:1);
 });
